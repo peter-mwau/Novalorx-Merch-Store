@@ -1,0 +1,40 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/peter-mwau/Novalorx-Merch-Store#readme",
+  "bugs": {
+    "url": "https://github.com/peter-mwau/Novalorx-Merch-Store/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peter-mwau/Novalorx-Merch-Store.git"
+  },
+  "license": "MIT",
+  "author": "peter-mwau",
+  "type": "module",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "npm run test",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@prisma/adapter-mariadb": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "axios": "^1.20.0",
+    "dotenv": "^18.0.7",
+    "express": "^5.3.0",
+    "file": "^0.2.2",
+    "nodemon": "^3.1.14",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "prisma": "^7.10.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
