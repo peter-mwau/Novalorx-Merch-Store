@@ -71,6 +71,11 @@ enum CartStatus {
   CONVERTED
 }
 
+enum AuthProvider {
+  CLERK
+  EMAIL
+}
+
 // ─────────────────────────────────────────────────────────
 // USERS & AUTH
 // ─────────────────────────────────────────────────────────
@@ -87,6 +92,8 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   lastLogin       DateTime?
+  authProvider AuthProvider @default(EMAIL)
+  clerkId      String?     @unique
 
   oauthAccounts   OAuthAccount[]
   sessions        Session[]
