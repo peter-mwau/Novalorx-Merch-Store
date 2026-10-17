@@ -1,50 +1,42 @@
-// import { useEffect, useRef } from "react";
+import { useClerk } from "@clerk/clerk-react";
 
 /**
  * Google + GitHub OAuth buttons.
  *
- * When you wire Clerk, replace the handleOAuth body with:
- *
- *   import { useClerk } from "@clerk/clerk-react";
- *   const clerk = useClerk();
- *   clerk.openSignIn({}); // or clerk.authenticateWithRedirect({ strategy: "oauth_google", ... })
  */
 export default function ClerkButtons({ isDark }) {
+  const { authenticateWithRedirect, openSignIn } = useClerk();
+
   const handleOAuth = (provider) => {
-    // TODO: integrate Clerk here.
-    // Example once Clerk is installed:
-    //   import { useClerk } from "@clerk/clerk-react";
-    //   const { openSignIn } = useClerk();
-    //   openSignIn({});
-    console.log(`Clerk OAuth: ${provider}`);
+    authenticateWithRedirect({
+      strategy: `oauth_${provider}`,
+      redirectUrl: window.location.href,
+      redirectUrlComplete: window.location.href,
+    });
+  };
+
+  const handleClerkSignIn = () => {
+    openSignIn({
+      redirectUrl: window.location.href,
+      redirectUrlComplete: window.location.href,
+    });
   };
 
   const base = `flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
     isDark
-      ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
+      ? "border-white/10 bg-white text-white hover:bg-gray-300"
       : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
   }`;
 
   return (
-    <div className="mt-6 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          onClick={() => handleOAuth("google")}
-          className={base}
-        >
-          <img src="/google.png" alt="Google" className="h-4 w-4" />
-          Google
-        </button>
-        <button
-          type="button"
-          onClick={() => handleOAuth("github")}
-          className={base}
-        >
-          <img src="/clerk_logo.svg" alt="GitHub" className="h-4 w-4" />
-          GitHub
-        </button>
-      </div>
+    <div className="mx-auto mt-6 w-[100%] space-y-3">
+      <button
+        type="button"
+        onClick={handleClerkSignIn}
+        className={`${base} w-full hover:cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50`}
+      >
+        <img src="/clerk_logo.svg" alt="Clerk" className="h-6" />
+      </button>
 
       <div className="relative py-1">
         <div className={`absolute inset-0 flex items-center`}>
