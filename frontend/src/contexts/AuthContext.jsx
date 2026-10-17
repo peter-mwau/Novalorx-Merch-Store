@@ -43,7 +43,12 @@ export function AuthProvider({ children }) {
     let active = true;
     fetchProfile(token)
       .then((data) => {
-        if (active) setUser(data.user);
+        if (active) {
+          setUser((currentUser) => ({
+            ...data.user,
+            imageUrl: currentUser?.imageUrl,
+          }));
+        }
       })
       .catch(() => {
         if (active) clearSession();
@@ -98,7 +103,11 @@ export function AuthProvider({ children }) {
     const clerkToken = await getToken();
     if (!clerkToken) return;
 
-    const data = await fetchProfile(clerkToken);
+    const response = await fetch(`${API_URL}/auth/clerk/sync`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${clerkToken}` },
+    });
+    const data = await readResponse(response);
     setUser({ ...data.user, imageUrl });
     setToken(clerkToken);
     setClerkSignedIn(true);

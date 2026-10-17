@@ -55,6 +55,7 @@ const getClerkUser = async (token) => {
             data: {
                 clerkId: claims.sub,
                 email: email.trim().toLowerCase(),
+                authProvider: 'CLERK',
                 fullName: fullName || undefined,
                 emailVerifiedAt: clerkUser.emailAddresses.find(
                     (address) => address.id === clerkUser.primaryEmailAddressId,
