@@ -94,12 +94,12 @@ export function AuthProvider({ children }) {
     return readResponse(response);
   }, []);
 
-  const syncClerkSession = useCallback(async (getToken) => {
+  const syncClerkSession = useCallback(async (getToken, imageUrl) => {
     const clerkToken = await getToken();
     if (!clerkToken) return;
 
     const data = await fetchProfile(clerkToken);
-    setUser(data.user);
+    setUser({ ...data.user, imageUrl });
     setToken(clerkToken);
     setClerkSignedIn(true);
   }, [fetchProfile]);
