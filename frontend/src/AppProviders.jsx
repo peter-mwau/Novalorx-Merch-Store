@@ -51,12 +51,12 @@ function ClerkSessionBridge({ children }) {
 
   useEffect(() => {
     if (isSignedIn) {
-      syncClerkSession(getToken).catch((error) => {
+      syncClerkSession(getToken, clerkUser?.imageUrl).catch((error) => {
         console.error("Unable to sync Clerk session:", error);
         clearSession();
       });
     }
-  }, [clearSession, getToken, isSignedIn, syncClerkSession]);
+  }, [clearSession, clerkUser?.imageUrl, getToken, isSignedIn, syncClerkSession]);
 
   return children;
 }

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "../../contexts/themeContext.jsx";
 import { useAuth } from "../../contexts/AuthContext.jsx";
+import { ToastViewport } from "../../contexts/ToastContext.jsx";
 import ClerkButtons from "./ClerkButtons";
 
 export default function AuthModal({ open, onClose, initialMode = "login" }) {
@@ -29,6 +30,7 @@ export default function AuthModal({ open, onClose, initialMode = "login" }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [mounted, setMounted] = useState(false);
+  const [modalToast, setModalToast] = useState(null);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -45,6 +47,7 @@ export default function AuthModal({ open, onClose, initialMode = "login" }) {
       setMode(initialMode);
       setError(null);
       setSuccess(null);
+      setModalToast(null);
     }
   }, [open, initialMode]);
 
@@ -84,10 +87,12 @@ export default function AuthModal({ open, onClose, initialMode = "login" }) {
     setError(null);
     setSuccess(null);
     setLoading(true);
+    setModalToast({ message: "Working...", type: "loading" });
 
     try {
       if (mode === "login") {
         await login({ email: form.email, password: form.password });
+        setModalToast({ message: "Welcome back!", type: "success" });
         setSuccess("Welcome back!");
         setTimeout(() => {
           onClose();
@@ -100,6 +105,7 @@ export default function AuthModal({ open, onClose, initialMode = "login" }) {
           phone: form.phone,
           password: form.password,
         });
+        setModalToast({ message: "Account created successfully.", type: "success" });
         setSuccess("Account created. You can sign in now.");
         setTimeout(() => switchMode("login"), 900);
       } else {
@@ -107,11 +113,13 @@ export default function AuthModal({ open, onClose, initialMode = "login" }) {
           email: form.email,
           newPassword: form.newPassword,
         });
+        setModalToast({ message: "Password reset successful.", type: "success" });
         setSuccess("Password reset successful.");
         setTimeout(() => switchMode("login"), 900);
       }
     } catch (err) {
       setError(err.message || "Something went wrong");
+      setModalToast({ message: err.message || "Something went wrong", type: "error" });
     } finally {
       setLoading(false);
     }
@@ -128,6 +136,11 @@ export default function AuthModal({ open, onClose, initialMode = "login" }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
+          <ToastViewport
+            toast={modalToast}
+            onDismiss={() => setModalToast(null)}
+            className="absolute right-4 top-16"
+          />
           {/* Backdrop */}
           <motion.div
             className={`absolute inset-0 backdrop-blur-sm ${
