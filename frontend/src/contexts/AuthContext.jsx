@@ -2,6 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 const TOKEN_KEY = "token";
+const TOKEN_TYPE_KEY = "token_type";
+const emailAvatar = (email) =>
+  `https://picsum.photos/seed/${encodeURIComponent(email || "novalorx")}/160/160`;
 
 const AuthContext = createContext(null);
 
@@ -15,13 +18,18 @@ async function readResponse(response) {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
+  const [token, setToken] = useState(() =>
+    localStorage.getItem(TOKEN_TYPE_KEY) === "EMAIL"
+      ? localStorage.getItem(TOKEN_KEY)
+      : null,
+  );
   const [clerkActions, setClerkActions] = useState(null);
   const [clerkSignedIn, setClerkSignedIn] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const clearSession = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_TYPE_KEY);
     setToken(null);
     setUser(null);
     setClerkSignedIn(false);
@@ -46,7 +54,7 @@ export function AuthProvider({ children }) {
         if (active) {
           setUser((currentUser) => ({
             ...data.user,
-            imageUrl: currentUser?.imageUrl,
+            imageUrl: currentUser?.imageUrl || emailAvatar(data.user.email),
           }));
         }
       })
@@ -75,8 +83,9 @@ export function AuthProvider({ children }) {
     }
 
     localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.setItem(TOKEN_TYPE_KEY, "EMAIL");
     setToken(data.token);
-    setUser(data.user);
+    setUser({ ...data.user, imageUrl: emailAvatar(data.user.email) });
     setClerkSignedIn(false);
     return data;
   }, []);
@@ -99,6 +108,26 @@ export function AuthProvider({ children }) {
     return readResponse(response);
   }, []);
 
+  const updateProfile = useCallback(async (details) => {
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify(details),
+    });
+    const data = await readResponse(response);
+    setUser((currentUser) => ({ ...data.user, imageUrl: currentUser?.imageUrl || emailAvatar(data.user.email) }));
+    return data;
+  }, [token]);
+
+  const changePassword = useCallback(async (details) => {
+    const response = await fetch(`${API_URL}/auth/profile/password`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify(details),
+    });
+    return readResponse(response);
+  }, [token]);
+
   const syncClerkSession = useCallback(async (getToken, imageUrl) => {
     const clerkToken = await getToken();
     if (!clerkToken) return;
@@ -109,6 +138,8 @@ export function AuthProvider({ children }) {
     });
     const data = await readResponse(response);
     setUser({ ...data.user, imageUrl });
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_TYPE_KEY);
     setToken(clerkToken);
     setClerkSignedIn(true);
   }, [fetchProfile]);
@@ -142,6 +173,8 @@ export function AuthProvider({ children }) {
       login,
       signup,
       resetPassword,
+      updateProfile,
+      changePassword,
       logout,
       openClerkSignIn: clerkActions?.openSignIn,
       registerClerkActions,
@@ -157,6 +190,8 @@ export function AuthProvider({ children }) {
       logout,
       registerClerkActions,
       resetPassword,
+      updateProfile,
+      changePassword,
       signup,
       syncClerkSession,
       token,

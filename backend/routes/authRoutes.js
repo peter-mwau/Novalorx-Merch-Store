@@ -7,6 +7,7 @@ import {
     updateUserProfile,
     deleteUserAccount,
     resetPassword,
+    updateUserPassword,
 } from '../controllers/authController.js';
 import { authenticateUser } from '../middlewares/authMiddleware.js';
 
@@ -19,6 +20,7 @@ router.post('/clerk/sync', authenticateUser, getUserProfile);
 router.post('/reset-password', resetPassword);
 router.get('/profile', authenticateUser, getUserProfile);
 router.patch('/profile', authenticateUser, updateUserProfile);
+router.patch('/profile/password', authenticateUser, updateUserPassword);
 router.delete('/profile', authenticateUser, deleteUserAccount);
 
 export default router;

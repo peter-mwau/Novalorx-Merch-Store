@@ -23,6 +23,7 @@ const publicUserSelect = {
     createdAt: true,
     updatedAt: true,
     lastLogin: true,
+    authProvider: true,
 };
 
 const generateToken = (user) => jwt.sign(
@@ -166,6 +167,38 @@ export const updateUserProfile = async (req, res) => {
         if (error.code === 'P2025') {
             return res.status(404).json({ error: 'User not found' });
         }
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const updateUserPassword = async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword || newPassword.length < 8) {
+        return res.status(400).json({
+            error: 'Current password and a new password of at least 8 characters are required',
+        });
+    }
+
+    try {
+        const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+        if (!user || user.authProvider !== 'EMAIL' || !user.passwordHash) {
+            return res.status(400).json({ error: 'Password changes are only available for email accounts' });
+        }
+
+        if (!await bcrypt.compare(currentPassword, user.passwordHash)) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash: await bcrypt.hash(newPassword, 10) },
+            select: publicUserSelect,
+        });
+
+        return res.status(200).json({ success: true, user: updatedUser });
+    } catch (error) {
+        console.error('Update password error:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 };
