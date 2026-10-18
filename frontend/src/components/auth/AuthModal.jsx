@@ -37,6 +37,7 @@ export default function AuthModal({ open, onClose, initialMode = "login" }) {
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
     newPassword: "",
   });
 
@@ -70,6 +71,7 @@ export default function AuthModal({ open, onClose, initialMode = "login" }) {
       email: "",
       phone: "",
       password: "",
+      confirmPassword: "",
       newPassword: "",
     });
     setError(null);
@@ -86,6 +88,13 @@ export default function AuthModal({ open, onClose, initialMode = "login" }) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+
+    if (mode === "signup" && form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      setModalToast({ message: "Passwords do not match.", type: "error" });
+      return;
+    }
+
     setLoading(true);
     setModalToast({ message: "Working...", type: "loading" });
 
@@ -249,7 +258,7 @@ export default function AuthModal({ open, onClose, initialMode = "login" }) {
                       "Enter your email and a new password."}
                   </p>
 
-                  {mode !== "forgot" &&
+                  {mode === "login" &&
                     import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim() && (
                       <ClerkButtons isDark={isDark} />
                     )}
@@ -298,6 +307,7 @@ export default function AuthModal({ open, onClose, initialMode = "login" }) {
                         autoComplete={
                           mode === "login" ? "current-password" : "new-password"
                         }
+                        minLength={mode === "signup" ? 8 : undefined}
                         required
                         trailing={
                           <button
@@ -317,6 +327,20 @@ export default function AuthModal({ open, onClose, initialMode = "login" }) {
                             )}
                           </button>
                         }
+                      />
+                    )}
+
+                    {mode === "signup" && (
+                      <Field
+                        icon={<Lock size={16} />}
+                        placeholder="Confirm password"
+                        type={showPassword ? "text" : "password"}
+                        value={form.confirmPassword}
+                        onChange={update("confirmPassword")}
+                        isDark={isDark}
+                        autoComplete="new-password"
+                        minLength={8}
+                        required
                       />
                     )}
 
