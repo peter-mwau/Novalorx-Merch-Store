@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { useTheme } from "../../contexts/themeContext.jsx";
 import { useCart } from "../../contexts/CartContext.jsx";
+import CartItem from "./CartItem";
 
 function formatMoney(cents, currency = "USD") {
   return new Intl.NumberFormat(undefined, {
@@ -18,13 +19,15 @@ export default function CartSidebar({ open, onClose }) {
   const isDark = darkMode;
 
   const {
-    items = [],
+    items: cartItems,
     updateQty,
     removeItem,
     subtotalCents = 0,
-    count = items.reduce((n, i) => n + i.quantity, 0),
+    count = cartItems?.reduce((n, i) => n + i.quantity, 0),
     clear,
   } = useCart() || {};
+
+  console.log("Items: ", cartItems);
 
   /* Lock scroll + Esc to close */
   useEffect(() => {
@@ -138,138 +141,47 @@ export default function CartSidebar({ open, onClose }) {
 
             {/* Body */}
             <div className="relative flex-1 overflow-y-auto px-5 py-4">
-              {items.length === 0 ? (
+              {cartItems?.length === 0 ? (
                 <EmptyState isDark={isDark} onClose={onClose} />
               ) : (
                 <ul className="space-y-3">
                   <AnimatePresence initial={false}>
-                    {items.map((item) => {
-                      const unitPrice =
-                        item.unitPriceCents ??
-                        item.priceCents ??
-                        item.product?.priceCents ??
-                        0;
-                      const lineTotal = unitPrice * item.quantity;
-                      const image =
-                        item.imageUrl ||
-                        item.product?.images?.[0]?.url ||
-                        item.product?.imageUrl;
-                      const name = item.name || item.product?.name || "Item";
-                      const variantName =
-                        item.variantName || item.variant?.name || null;
+                    {cartItems?.map((item) => {
                       const key =
                         item.id || `${item.productId}-${item.variantId}`;
-
                       return (
-                        <motion.li
+                        <motion.div
                           key={key}
                           layout
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, x: 20 }}
                           transition={{ duration: 0.18 }}
-                          className={itemCard}
                         >
-                          {/* Thumb */}
-                          <div
-                            className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl ring-1 ${
-                              isDark ? "ring-white/10" : "ring-slate-200"
-                            }`}
-                          >
-                            {image ? (
-                              <img
-                                src={image}
-                                alt=""
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="grid h-full w-full place-items-center bg-gradient-to-br from-cyan-400/20 to-cyan-600/20 text-cyan-500">
-                                <ShoppingBag size={18} />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Info */}
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold tracking-tight">
-                                  {name}
-                                </p>
-                                {variantName && (
-                                  <p
-                                    className={`truncate text-[11px] ${muted}`}
-                                  >
-                                    {variantName}
-                                  </p>
-                                )}
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  removeItem?.(item.productId, item.variantId)
-                                }
-                                aria-label="Remove item"
-                                className={`shrink-0 rounded-md p-1 transition ${
-                                  isDark
-                                    ? "text-slate-500 hover:bg-red-500/10 hover:text-red-400"
-                                    : "text-slate-400 hover:bg-red-500/10 hover:text-red-500"
-                                }`}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-
-                            <div className="mt-2 flex items-center justify-between">
-                              {/* Qty stepper */}
-                              <div
-                                className={`flex items-center gap-1 rounded-lg p-0.5 ring-1 ${
-                                  isDark
-                                    ? "bg-white/[0.03] ring-white/10"
-                                    : "bg-white ring-slate-200"
-                                }`}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    updateQty?.(
-                                      item.productId,
-                                      item.variantId,
-                                      Math.max(1, item.quantity - 1),
-                                    )
-                                  }
-                                  disabled={item.quantity <= 1}
-                                  className={qtyBtn}
-                                  aria-label="Decrease quantity"
-                                >
-                                  <Minus size={12} />
-                                </button>
-                                <span className="w-6 text-center text-xs font-semibold">
-                                  {item.quantity}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    updateQty?.(
-                                      item.productId,
-                                      item.variantId,
-                                      item.quantity + 1,
-                                    )
-                                  }
-                                  className={qtyBtn}
-                                  aria-label="Increase quantity"
-                                >
-                                  <Plus size={12} />
-                                </button>
-                              </div>
-
-                              <span className="text-sm font-semibold tracking-tight">
-                                {formatMoney(lineTotal, item.currency || "USD")}
-                              </span>
-                            </div>
-                          </div>
-                        </motion.li>
+                          <ul className="contents">
+                            <CartItem
+                              item={item}
+                              variant="compact"
+                              onIncrement={(it) =>
+                                updateQty?.(
+                                  it.productId,
+                                  it.variantId,
+                                  it.quantity + 1,
+                                )
+                              }
+                              onDecrement={(it) =>
+                                updateQty?.(
+                                  it.productId,
+                                  it.variantId,
+                                  Math.max(1, it.quantity - 1),
+                                )
+                              }
+                              onRemove={(it) =>
+                                removeItem?.(it.productId, it.variantId)
+                              }
+                            />
+                          </ul>
+                        </motion.div>
                       );
                     })}
                   </AnimatePresence>
@@ -283,7 +195,7 @@ export default function CartSidebar({ open, onClose }) {
                 isDark ? "border-white/10" : "border-slate-200"
               }`}
             >
-              {items.length > 0 && (
+              {cartItems?.length > 0 && (
                 <>
                   <div className="flex items-center justify-between text-sm">
                     <span className={muted}>Subtotal</span>
