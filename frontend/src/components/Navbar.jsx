@@ -23,7 +23,7 @@ function Navbar() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { isLoggedIn, user, logout } = useAuth();
+  const { isLoggedIn, user, logout, isAdmin } = useAuth();
   const { showToast, dismissToast } = useToast();
   const { darkMode, toggleTheme } = useTheme();
   const isDark = darkMode;
@@ -145,6 +145,7 @@ function Navbar() {
               { label: "Home", href: "/" },
               { label: "Shop", href: "/shop" },
               { label: "About", href: "/about" },
+              ...(isAdmin ? [{ label: "Admin", href: "/admin" }] : []),
               { label: "Contact", href: "/contact" },
             ].map((l) => (
               <li key={l.href}>
@@ -332,6 +333,7 @@ function Navbar() {
                 { label: "Home", href: "/" },
                 { label: "Shop", href: "/shop" },
                 { label: "About", href: "/about" },
+                ...(isAdmin ? [{ label: "Admin", href: "/admin" }] : []),
                 { label: "Contact", href: "/contact" },
               ].map((item) => (
                 <li key={item.href}>
