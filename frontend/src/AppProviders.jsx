@@ -1,10 +1,16 @@
 import { BrowserRouter } from "react-router-dom";
-import { ClerkProvider, useAuth as useClerkAuth, useClerk, useUser } from "@clerk/clerk-react";
+import {
+  ClerkProvider,
+  useAuth as useClerkAuth,
+  useClerk,
+  useUser,
+} from "@clerk/clerk-react";
 import { useEffect } from "react";
 import { ThemeProvider } from "./contexts/themeContext.jsx";
 import { AuthProvider, useAuth } from "./contexts/AuthContext.jsx";
 import { ToastProvider } from "./contexts/ToastContext.jsx";
 import App from "./App.jsx";
+import { CartProvider } from "./contexts/CartContext.jsx";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim();
 
@@ -14,13 +20,15 @@ export default function AppProviders() {
       <ThemeProvider>
         <ToastProvider>
           <AuthProvider>
-            {PUBLISHABLE_KEY ? (
-              <ClerkSessionBridge>
+            <CartProvider>
+              {PUBLISHABLE_KEY ? (
+                <ClerkSessionBridge>
+                  <App />
+                </ClerkSessionBridge>
+              ) : (
                 <App />
-              </ClerkSessionBridge>
-            ) : (
-              <App />
-            )}
+              )}
+            </CartProvider>
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>
@@ -47,7 +55,13 @@ function ClerkSessionBridge({ children }) {
       signOut,
       imageUrl: clerkUser?.imageUrl,
     });
-  }, [clerkUser?.imageUrl, isSignedIn, openSignIn, registerClerkActions, signOut]);
+  }, [
+    clerkUser?.imageUrl,
+    isSignedIn,
+    openSignIn,
+    registerClerkActions,
+    signOut,
+  ]);
 
   useEffect(() => {
     if (isSignedIn) {
@@ -56,7 +70,13 @@ function ClerkSessionBridge({ children }) {
         clearSession();
       });
     }
-  }, [clearSession, clerkUser?.imageUrl, getToken, isSignedIn, syncClerkSession]);
+  }, [
+    clearSession,
+    clerkUser?.imageUrl,
+    getToken,
+    isSignedIn,
+    syncClerkSession,
+  ]);
 
   return children;
 }

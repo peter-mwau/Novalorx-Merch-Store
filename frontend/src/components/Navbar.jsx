@@ -15,6 +15,8 @@ import {
   X,
 } from "lucide-react";
 import { useTheme } from "../contexts/themeContext";
+import CartSidebar from "./cart/CartSidebar";
+import { useCart } from "../contexts/CartContext.jsx";
 
 function Navbar() {
   const [authOpen, setAuthOpen] = useState(false);
@@ -25,6 +27,8 @@ function Navbar() {
   const { showToast, dismissToast } = useToast();
   const { darkMode, toggleTheme } = useTheme();
   const isDark = darkMode;
+  const [cartOpen, setCartOpen] = useState(false);
+  const { count: cartCount } = useCart() || {};
 
   const profileRef = useRef(null);
   const mobileRef = useRef(null);
@@ -181,8 +185,18 @@ function Navbar() {
             </button>
 
             {/* Cart */}
-            <button type="button" aria-label="Cart" className={iconBtn}>
+            <button
+              type="button"
+              aria-label="Cart"
+              className={`${iconBtn} hover:cursor-pointer`}
+              onClick={() => setCartOpen(true)}
+            >
               <ShoppingCart size={17} />
+              {cartCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-cyan-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-950">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
               <span
                 className={`absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-cyan-500 ring-2 ${
                   isDark ? "ring-slate-950" : "ring-white"
@@ -406,6 +420,7 @@ function Navbar() {
       <div className="h-20" />
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <CartSidebar open={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   );
 }
