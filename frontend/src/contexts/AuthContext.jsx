@@ -1,4 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 const TOKEN_KEY = "token";
@@ -26,6 +33,7 @@ export function AuthProvider({ children }) {
   const [clerkActions, setClerkActions] = useState(null);
   const [clerkSignedIn, setClerkSignedIn] = useState(false);
   const [loading, setLoading] = useState(true);
+  // const [ isAdmin, setIsAdmin ] = useState(false);
 
   const clearSession = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
@@ -108,41 +116,59 @@ export function AuthProvider({ children }) {
     return readResponse(response);
   }, []);
 
-  const updateProfile = useCallback(async (details) => {
-    const response = await fetch(`${API_URL}/auth/profile`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify(details),
-    });
-    const data = await readResponse(response);
-    setUser((currentUser) => ({ ...data.user, imageUrl: currentUser?.imageUrl || emailAvatar(data.user.email) }));
-    return data;
-  }, [token]);
+  const updateProfile = useCallback(
+    async (details) => {
+      const response = await fetch(`${API_URL}/auth/profile`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify(details),
+      });
+      const data = await readResponse(response);
+      setUser((currentUser) => ({
+        ...data.user,
+        imageUrl: currentUser?.imageUrl || emailAvatar(data.user.email),
+      }));
+      return data;
+    },
+    [token],
+  );
 
-  const changePassword = useCallback(async (details) => {
-    const response = await fetch(`${API_URL}/auth/profile/password`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify(details),
-    });
-    return readResponse(response);
-  }, [token]);
+  const changePassword = useCallback(
+    async (details) => {
+      const response = await fetch(`${API_URL}/auth/profile/password`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify(details),
+      });
+      return readResponse(response);
+    },
+    [token],
+  );
 
-  const syncClerkSession = useCallback(async (getToken, imageUrl) => {
-    const clerkToken = await getToken();
-    if (!clerkToken) return;
+  const syncClerkSession = useCallback(
+    async (getToken, imageUrl) => {
+      const clerkToken = await getToken();
+      if (!clerkToken) return;
 
-    const response = await fetch(`${API_URL}/auth/clerk/sync`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${clerkToken}` },
-    });
-    const data = await readResponse(response);
-    setUser({ ...data.user, imageUrl });
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(TOKEN_TYPE_KEY);
-    setToken(clerkToken);
-    setClerkSignedIn(true);
-  }, [fetchProfile]);
+      const response = await fetch(`${API_URL}/auth/clerk/sync`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${clerkToken}` },
+      });
+      const data = await readResponse(response);
+      setUser({ ...data.user, imageUrl });
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_TYPE_KEY);
+      setToken(clerkToken);
+      setClerkSignedIn(true);
+    },
+    [fetchProfile],
+  );
 
   const registerClerkActions = useCallback((actions) => {
     setClerkActions(actions);
@@ -170,6 +196,7 @@ export function AuthProvider({ children }) {
       token,
       loading,
       isLoggedIn: Boolean(user) || clerkSignedIn,
+      isAdmin: user?.role === "ADMIN",
       login,
       signup,
       resetPassword,
