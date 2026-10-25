@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext.jsx";
 import { ToastProvider } from "./contexts/ToastContext.jsx";
 import App from "./App.jsx";
 import { CartProvider } from "./contexts/CartContext.jsx";
+import { AdminProvider } from "./contexts/adminContext.jsx";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim();
 
@@ -21,13 +22,15 @@ export default function AppProviders() {
         <ToastProvider>
           <AuthProvider>
             <CartProvider>
-              {PUBLISHABLE_KEY ? (
-                <ClerkSessionBridge>
+              <AdminProvider>
+                {PUBLISHABLE_KEY ? (
+                  <ClerkSessionBridge>
+                    <App />
+                  </ClerkSessionBridge>
+                ) : (
                   <App />
-                </ClerkSessionBridge>
-              ) : (
-                <App />
-              )}
+                )}
+              </AdminProvider>
             </CartProvider>
           </AuthProvider>
         </ToastProvider>
