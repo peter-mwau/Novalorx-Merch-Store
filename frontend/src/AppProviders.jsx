@@ -12,6 +12,7 @@ import { ToastProvider } from "./contexts/ToastContext.jsx";
 import App from "./App.jsx";
 import { CartProvider } from "./contexts/CartContext.jsx";
 import { AdminProvider } from "./contexts/adminContext.jsx";
+import { ProductsProvider } from "./contexts/productsContext.jsx";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim();
 
@@ -23,13 +24,15 @@ export default function AppProviders() {
           <AuthProvider>
             <CartProvider>
               <AdminProvider>
-                {PUBLISHABLE_KEY ? (
-                  <ClerkSessionBridge>
+                <ProductsProvider>
+                  {PUBLISHABLE_KEY ? (
+                    <ClerkSessionBridge>
+                      <App />
+                    </ClerkSessionBridge>
+                  ) : (
                     <App />
-                  </ClerkSessionBridge>
-                ) : (
-                  <App />
-                )}
+                  )}
+                </ProductsProvider>
               </AdminProvider>
             </CartProvider>
           </AuthProvider>
