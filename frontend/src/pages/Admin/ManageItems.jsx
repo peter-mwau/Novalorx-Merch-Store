@@ -7,17 +7,12 @@ const emptyProduct = {
   name: "",
   slug: "",
   categoryId: "",
-  shortDescription: "",
   description: "",
   priceCents: 0,
-  compareAtCents: "",
   sku: "",
   stock: 0,
   currency: "USD",
   isActive: true,
-  isFeatured: false,
-  hasVariants: false,
-  requiresShipping: true,
   images: [],
 };
 
@@ -37,6 +32,9 @@ function ManageItems() {
   const { darkMode } = useTheme();
   const [query, setQuery] = useState("");
   const [formProduct, setFormProduct] = useState(null);
+  const [formStep, setFormStep] = useState(1);
+  const [imageUrl, setImageUrl] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [deletingProduct, setDeletingProduct] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -62,20 +60,111 @@ function ManageItems() {
     ? "bg-white/5 text-white ring-white/10 placeholder:text-slate-500"
     : "bg-slate-50 text-slate-900 ring-slate-200 placeholder:text-slate-400";
 
+  const openProductForm = (product = emptyProduct) => {
+    setFormProduct({
+      ...product,
+      images: product.images?.map((image) => ({ ...image })) || [],
+    });
+    setFormStep(1);
+    setImageUrl("");
+    setError("");
+    setFieldErrors({});
+  };
+
+  const updateFormProduct = (key, value) => {
+    setFormProduct((current) => ({ ...current, [key]: value }));
+    setFieldErrors((current) => ({ ...current, [key]: "" }));
+  };
+
+  const validateDetails = () => {
+    const errors = {};
+    for (const field of ["name", "slug", "categoryId"]) {
+      if (!formProduct[field]?.trim()) errors[field] = "This field is required.";
+    }
+    if (!Number.isInteger(Number(formProduct.priceCents)) || Number(formProduct.priceCents) < 0) {
+      errors.priceCents = "Enter a non-negative integer.";
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const goToNextStep = () => {
+    if (formStep === 1 && !validateDetails()) return;
+    setError("");
+    setFormStep((step) => Math.min(3, step + 1));
+  };
+
+  const addImage = () => {
+    const url = imageUrl.trim();
+    if (!url) return;
+    try {
+      new URL(url);
+    } catch {
+      setError("Enter a valid image URL.");
+      return;
+    }
+    setFormProduct((current) => ({
+      ...current,
+      images: [...(current.images || []), { url, sortOrder: current.images?.length || 0 }],
+    }));
+    setImageUrl("");
+    setError("");
+  };
+
+  const addSelectedImage = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image file.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormProduct((current) => ({
+        ...current,
+        images: [...(current.images || []), {
+          url: reader.result,
+          alt: file.name,
+          sortOrder: current.images?.length || 0,
+        }],
+      }));
+      setError("");
+    };
+    reader.onerror = () => setError("The selected image could not be read.");
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = (index) => {
+    setFormProduct((current) => ({
+      ...current,
+      images: current.images.filter((_, imageIndex) => imageIndex !== index),
+    }));
+  };
+
   const submitProduct = async (event) => {
     event.preventDefault();
+    if (!validateDetails()) {
+      setFormStep(1);
+      return;
+    }
     setSaving(true);
     setError("");
     try {
       const payload = {
-        ...formProduct,
-        priceCents: Number(formProduct.priceCents),
-        compareAtCents: formProduct.compareAtCents
-          ? Number(formProduct.compareAtCents)
-          : null,
-        stock: Number(formProduct.stock),
-        images: formProduct.images.filter((image) => image.url),
-      };
+      categoryId: formProduct.categoryId.trim(),
+      name: formProduct.name.trim(),
+      slug: formProduct.slug.trim(),
+      description: formProduct.description?.trim() || null,
+      currency: (formProduct.currency || "USD").trim().toUpperCase(),
+      sku: formProduct.sku?.trim() || null,
+      priceCents: Number(formProduct.priceCents),
+      stock: Number(formProduct.stock),
+      images: formProduct.images.filter((image) => image.url),
+    };
+    if (!payload.currency || payload.currency.length !== 3) {
+      throw new Error("Currency must be a 3-letter code");
+    }
       if (formProduct.id) {
         await updateProduct(formProduct.id, payload);
       } else {
@@ -124,7 +213,7 @@ function ManageItems() {
           </div>
           <button
             className="flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-cyan-600"
-            onClick={() => setFormProduct({ ...emptyProduct })}
+            onClick={() => openProductForm()}
             type="button"
           >
             <Plus size={18} /> Add product
@@ -160,7 +249,7 @@ function ManageItems() {
                   <td className="px-5 py-4 font-medium">{money(product.priceCents, product.currency)}</td>
                   <td className={`px-5 py-4 ${product.stock === 0 ? "text-red-500" : ""}`}>{product.stock}</td>
                   <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${product.isActive ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-500/10 text-slate-400"}`}>{product.isActive ? "Active" : "Draft"}</span></td>
-                  <td className="px-5 py-4"><div className="flex gap-2"><button className="rounded-lg p-2 text-cyan-500 hover:bg-cyan-500/10" onClick={() => setFormProduct({ ...product })} title="Edit product" type="button"><Edit3 size={17} /></button><button className="rounded-lg p-2 text-red-500 hover:bg-red-500/10" onClick={() => setDeletingProduct(product)} title="Delete product" type="button"><Trash2 size={17} /></button></div></td>
+                  <td className="px-5 py-4"><div className="flex gap-2"><button className="rounded-lg p-2 text-cyan-500 hover:bg-cyan-500/10" onClick={() => openProductForm(product)} title="Edit product" type="button"><Edit3 size={17} /></button><button className="rounded-lg p-2 text-red-500 hover:bg-red-500/10" onClick={() => setDeletingProduct(product)} title="Delete product" type="button"><Trash2 size={17} /></button></div></td>
                 </tr>
               ))}
             </tbody>
@@ -172,25 +261,39 @@ function ManageItems() {
       {formProduct && (
         <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-slate-950/70 p-4" role="dialog">
           <form className={`my-8 w-full max-w-2xl space-y-4 rounded-2xl p-6 ring-1 ${panel}`} onSubmit={submitProduct}>
-            <div className="flex items-center justify-between"><div><h2 className="text-xl font-bold">{formProduct.id ? "Edit product" : "Add product"}</h2><p className={`mt-1 text-sm ${muted}`}>Prices are entered in cents.</p></div><button onClick={() => setFormProduct(null)} type="button"><X /></button></div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {[
-                ["name", "Name", "text"],
-                ["slug", "Slug", "text"],
-                ["categoryId", "Category ID", "text"],
-                ["sku", "SKU", "text"],
-                ["priceCents", "Price (cents)", "number"],
-                ["compareAtCents", "Compare at (cents)", "number"],
-                ["stock", "Stock", "number"],
-              ].map(([key, label, type]) => (
-                <label className="block text-sm font-medium" key={key}>{label}<input className={`mt-2 w-full rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${input}`} min={type === "number" ? "0" : undefined} onChange={(event) => setFormProduct({ ...formProduct, [key]: event.target.value })} required={["name", "slug", "categoryId", "priceCents"].includes(key)} type={type} value={formProduct[key] ?? ""} /></label>
-              ))}
+            <div className="flex items-center justify-between"><div><h2 className="text-xl font-bold">{formProduct.id ? "Edit product" : "Add product"}</h2><p className={`mt-1 text-sm ${muted}`}>Step {formStep} of 3</p></div><button onClick={() => setFormProduct(null)} type="button"><X /></button></div>
+            <div className="grid grid-cols-3 gap-2">
+              {["Details", "Images", "Review"].map((label, index) => <div className={`rounded-lg px-3 py-2 text-center text-xs font-semibold ${formStep === index + 1 ? "bg-cyan-500 text-white" : darkMode ? "bg-white/5 text-slate-400" : "bg-slate-100 text-slate-500"}`} key={label}>{index + 1}. {label}</div>)}
             </div>
-            <label className="block text-sm font-medium">Short description<textarea className={`mt-2 min-h-20 w-full rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${input}`} onChange={(event) => setFormProduct({ ...formProduct, shortDescription: event.target.value })} value={formProduct.shortDescription || ""} /></label>
-            <label className="block text-sm font-medium">Description<textarea className={`mt-2 min-h-28 w-full rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${input}`} onChange={(event) => setFormProduct({ ...formProduct, description: event.target.value })} value={formProduct.description || ""} /></label>
-            <label className="block text-sm font-medium">Image URL<input className={`mt-2 w-full rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${input}`} onChange={(event) => setFormProduct({ ...formProduct, images: [{ url: event.target.value }] })} placeholder="https://..." type="url" value={formProduct.images?.[0]?.url || ""} /></label>
-            <div className="flex flex-wrap gap-5 text-sm"><label className="flex items-center gap-2"><input checked={formProduct.isActive} onChange={(event) => setFormProduct({ ...formProduct, isActive: event.target.checked })} type="checkbox" /> Active</label><label className="flex items-center gap-2"><input checked={formProduct.isFeatured} onChange={(event) => setFormProduct({ ...formProduct, isFeatured: event.target.checked })} type="checkbox" /> Featured</label><label className="flex items-center gap-2"><input checked={formProduct.hasVariants} onChange={(event) => setFormProduct({ ...formProduct, hasVariants: event.target.checked })} type="checkbox" /> Has variants</label></div>
-            <button className="w-full rounded-xl bg-cyan-500 px-4 py-3 font-semibold text-white hover:bg-cyan-600 disabled:opacity-50" disabled={saving} type="submit">{saving ? "Saving..." : formProduct.id ? "Save changes" : "Create product"}</button>
+            {formStep === 1 && <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[
+                  ["name", "Name", "text"],
+                  ["slug", "Slug", "text"],
+                  ["categoryId", "Category ID", "text"],
+                  ["sku", "SKU", "text"],
+                  ["priceCents", "Price (cents)", "number"],
+                  ["stock", "Stock", "number"],
+                  ["currency", "Currency", "text"],
+                ].map(([key, label, type]) => (
+                  <label className="block text-sm font-medium" key={key}>{label}<input aria-invalid={Boolean(fieldErrors[key])} className={`mt-2 w-full rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${fieldErrors[key] ? "ring-red-500" : ""} ${input}`} min={type === "number" ? "0" : undefined} onChange={(event) => updateFormProduct(key, event.target.value)} type={type} value={formProduct[key] ?? ""} />{fieldErrors[key] && <span className="mt-1 block text-xs text-red-500">{fieldErrors[key]}</span>}</label>
+                ))}
+              </div>
+              <label className="block text-sm font-medium">Description<textarea className={`mt-2 min-h-28 w-full rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${input}`} onChange={(event) => updateFormProduct("description", event.target.value)} value={formProduct.description || ""} /></label>
+              <label className="flex items-center gap-2 text-sm"><input checked={formProduct.isActive} onChange={(event) => updateFormProduct("isActive", event.target.checked)} type="checkbox" /> Active</label>
+            </div>}
+            {formStep === 2 && <div className="space-y-4">
+              <div className="flex flex-wrap gap-2"><label className="flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 font-semibold text-white hover:bg-cyan-600"><ImagePlus size={17} /> Choose file<input accept="image/*" className="sr-only" onChange={addSelectedImage} type="file" /></label><input className={`min-w-0 flex-1 rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${input}`} onChange={(event) => setImageUrl(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addImage(); } }} placeholder="Or paste an image URL" type="url" value={imageUrl} /><button className={`rounded-xl px-4 py-2.5 font-semibold ${darkMode ? "bg-white/10" : "bg-slate-100"}`} onClick={addImage} type="button">Add URL</button></div>
+              {!formProduct.images?.length && <p className={`rounded-xl border border-dashed p-8 text-center text-sm ${muted}`}>Add one or more image URLs to preview them here.</p>}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {formProduct.images?.map((image, index) => <div className={`overflow-hidden rounded-xl ring-1 ${darkMode ? "ring-white/10" : "ring-slate-200"}`} key={`${image.url}-${index}`}><div className="relative aspect-video bg-slate-100"><img className="h-full w-full object-cover" src={image.url} alt={`${formProduct.name || "Product"} preview ${index + 1}`} onError={(event) => { event.currentTarget.style.display = "none"; }} /><button className="absolute right-2 top-2 rounded-full bg-slate-950/70 p-1.5 text-white" onClick={() => removeImage(index)} type="button"><Trash2 size={15} /></button></div><p className={`truncate px-3 py-2 text-xs ${muted}`}>{image.url}</p></div>)}
+              </div>
+            </div>}
+            {formStep === 3 && <div className="space-y-4">
+              <div className={`rounded-xl p-4 ${darkMode ? "bg-white/5" : "bg-slate-50"}`}><h3 className="font-semibold">{formProduct.name || "Untitled product"}</h3><p className={`mt-1 text-sm ${muted}`}>{formProduct.description || "No description"}</p><div className="mt-3 flex flex-wrap gap-3 text-sm"><span>{money(Number(formProduct.priceCents), formProduct.currency || "USD")}</span><span>{formProduct.stock} in stock</span><span>{formProduct.isActive ? "Active" : "Draft"}</span></div></div>
+              <div className="grid grid-cols-3 gap-2">{formProduct.images?.map((image, index) => <img className="aspect-square w-full rounded-lg object-cover" key={`${image.url}-review-${index}`} src={image.url} alt="" />)}</div>
+            </div>}
+            <div className="flex justify-between gap-3 pt-2"><button className={`rounded-xl px-4 py-2.5 ring-1 ${input}`} disabled={saving || formStep === 1} onClick={() => setFormStep((step) => step - 1)} type="button">Back</button>{formStep < 3 ? <button className="rounded-xl bg-cyan-500 px-5 py-2.5 font-semibold text-white hover:bg-cyan-600" onClick={goToNextStep} type="button">Next</button> : <button className="rounded-xl bg-cyan-500 px-5 py-2.5 font-semibold text-white hover:bg-cyan-600 disabled:opacity-50" disabled={saving} type="submit">{saving ? "Saving..." : formProduct.id ? "Save changes" : "Create product"}</button>}</div>
           </form>
         </div>
       )}
