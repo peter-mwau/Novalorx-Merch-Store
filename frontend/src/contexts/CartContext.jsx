@@ -1,51 +1,29 @@
 import { createContext, useContext, useState } from "react";
+import { getPriceCents } from "../utils/productPricing.js";
 
 const CartContext = createContext(null);
 
-const sampleCartItems = [
-  {
-    id: 1,
-    productId: 101,
-    variantId: 201,
-    name: "Product 1",
-    variantName: "Variant A",
-    imageUrl: "https://via.placeholder.com/150",
-    unitPriceCents: 1000,
-    quantity: 2,
-    currency: "USD",
-    slug: "product-1",
-  },
-  {
-    id: 2,
-    productId: 102,
-    variantId: 202,
-    name: "Product 2",
-    variantName: "Variant B",
-    imageUrl: "https://via.placeholder.com/150",
-    unitPriceCents: 2000,
-    quantity: 1,
-    currency: "USD",
-    slug: "product-2",
-  },
-  {
-    id: 3,
-    productId: 103,
-    variantId: 203,
-    name: "Product 3",
-    variantName: "Variant C",
-    imageUrl: "https://via.placeholder.com/150",
-    unitPriceCents: 1500,
-    quantity: 3,
-    currency: "USD",
-    slug: "product-3",
-  },
-];
-
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState(sampleCartItems);
+  const [cartItems, setCartItems] = useState([]);
 
   const addToCart = (item) => {
-    setCartItems((prevItems) => [...prevItems, item]);
+    setCartItems((prevItems) => {
+      const existing = prevItems.find(
+        (current) =>
+          current.productId === item.productId &&
+          current.variantId === item.variantId,
+      );
+      if (!existing) return [...prevItems, { ...item, quantity: item.quantity || 1 }];
+      return prevItems.map((current) =>
+        current === existing
+          ? {
+              ...current,
+              ...item,
+              quantity: current.quantity + (item.quantity || 1),
+            }
+          : current,
+      );
+    });
   };
 
   const removeFromCart = (itemId) => {
@@ -53,10 +31,11 @@ export function CartProvider({ children }) {
   };
 
   const updateQty = (productId, variantId, quantity) => {
+    const nextQuantity = Math.max(1, Number(quantity) || 1);
     setCartItems((prevItems) =>
       prevItems.map((item) =>
         item.productId === productId && item.variantId === variantId
-          ? { ...item, quantity }
+          ? { ...item, quantity: nextQuantity }
           : item,
       ),
     );
@@ -74,7 +53,8 @@ export function CartProvider({ children }) {
   const clear = () => setCartItems([]);
   const count = cartItems.reduce((total, item) => total + item.quantity, 0);
   const subtotalCents = cartItems.reduce(
-    (total, item) => total + item.unitPriceCents * item.quantity,
+    (total, item) =>
+      total + getPriceCents(item) * item.quantity,
     0,
   );
 

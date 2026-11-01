@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { ArrowRight, ShoppingBag, X } from "lucide-react";
 import { useTheme } from "../../contexts/themeContext.jsx";
 import { useCart } from "../../contexts/CartContext.jsx";
 import CartItem from "./CartItem";
@@ -27,8 +27,6 @@ export default function CartSidebar({ open, onClose }) {
     clear,
   } = useCart() || {};
 
-  console.log("Items: ", cartItems);
-
   /* Lock scroll + Esc to close */
   useEffect(() => {
     if (!open) return;
@@ -47,18 +45,6 @@ export default function CartSidebar({ open, onClose }) {
 
   const muted = isDark ? "text-slate-400" : "text-slate-500";
   const divider = isDark ? "bg-white/10" : "bg-slate-200";
-
-  const itemCard = `relative flex gap-3 rounded-2xl p-3 ring-1 transition ${
-    isDark
-      ? "bg-white/[0.03] ring-white/5 hover:bg-white/[0.05]"
-      : "bg-slate-50 ring-slate-100 hover:bg-slate-100/70"
-  }`;
-
-  const qtyBtn = `grid h-7 w-7 place-items-center rounded-lg ring-1 transition ${
-    isDark
-      ? "text-slate-300 ring-white/10 hover:bg-white/10 hover:text-white disabled:opacity-40"
-      : "text-slate-600 ring-slate-200 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-40"
-  }`;
 
   const isOpen = open;
 
@@ -200,7 +186,7 @@ export default function CartSidebar({ open, onClose }) {
                   <div className="flex items-center justify-between text-sm">
                     <span className={muted}>Subtotal</span>
                     <span className="font-semibold tracking-tight">
-                      {formatMoney(subtotalCents)}
+                      {formatMoney(subtotalCents, cartItems[0]?.currency || "USD")}
                     </span>
                   </div>
                   <p className={`mt-1 text-[11px] ${muted}`}>

@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { useTheme } from "../../contexts/themeContext.jsx";
+import { getPriceCents } from "../../utils/productPricing.js";
 
 function formatMoney(cents, currency = "USD") {
   return new Intl.NumberFormat(undefined, {
@@ -35,8 +36,7 @@ function CartItem({
   const { darkMode } = useTheme();
   const isDark = darkMode;
 
-  const unitPrice =
-    item.unitPriceCents ?? item.priceCents ?? item.product?.priceCents ?? 0;
+  const unitPrice = getPriceCents(item);
   const lineTotal = unitPrice * item.quantity;
   const currency = item.currency || "USD";
 

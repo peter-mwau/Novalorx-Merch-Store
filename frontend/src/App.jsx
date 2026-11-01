@@ -4,6 +4,8 @@ import Home from "./pages/Home";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Profile from "./pages/Profile";
+import Products from "./pages/Products";
+import ProductDetails from "./pages/ProductDetails";
 import AdminPage from "./pages/AdminPage";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import ManageUsers from "./pages/Admin/ManageUsers";
@@ -24,6 +26,8 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/shop" element={<Products />} />
+        <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/about" element={<h1>About Page</h1>} />
         <Route path="/profile" element={<Profile />} />
 
