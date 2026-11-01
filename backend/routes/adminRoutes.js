@@ -2,8 +2,10 @@ import { Router } from 'express';
 import { getAllUsers, getUserById, updateUserById, deleteUserById } from '../controllers/adminController.js';
 import {
     createProduct,
+    createCategory,
     deleteProduct,
     getAllProducts,
+    getCategories,
     getProductById,
     updateProduct,
 } from '../controllers/productController.js';
@@ -17,6 +19,8 @@ router.put('/users/:id', updateUserById);
 router.delete('/users/:id', deleteUserById);
 
 // Admin routes for product management
+router.get('/categories', getCategories);
+router.post('/categories', createCategory);
 router.get('/products', getAllProducts);
 router.get('/products/:id', getProductById);
 router.post('/products', createProduct);

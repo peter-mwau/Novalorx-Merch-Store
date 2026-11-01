@@ -24,7 +24,10 @@ const money = (cents, currency) =>
 function ManageItems() {
   const {
     products,
+    categories,
     getAllProducts,
+    getCategories,
+    createCategory,
     createProduct,
     updateProduct,
     deleteProduct,
@@ -33,15 +36,22 @@ function ManageItems() {
   const [query, setQuery] = useState("");
   const [formProduct, setFormProduct] = useState(null);
   const [formStep, setFormStep] = useState(1);
+  const [variantOptions, setVariantOptions] = useState([
+    { name: "Color", values: "" },
+    { name: "Size", values: "" },
+  ]);
   const [imageUrl, setImageUrl] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [categoryName, setCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
   const [deletingProduct, setDeletingProduct] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     getAllProducts().catch((loadError) => setError(loadError.message));
-  }, [getAllProducts]);
+    getCategories().catch((loadError) => setError(loadError.message));
+  }, [getAllProducts, getCategories]);
 
   const filteredProducts = useMemo(() => {
     const search = query.toLowerCase();
@@ -61,14 +71,25 @@ function ManageItems() {
     : "bg-slate-50 text-slate-900 ring-slate-200 placeholder:text-slate-400";
 
   const openProductForm = (product = emptyProduct) => {
+    const existingAttributes = product.variants?.reduce((result, variant) => {
+      Object.entries(variant.attributes || {}).forEach(([name, value]) => {
+        result[name] = [...new Set([...(result[name] || []), value])];
+      });
+      return result;
+    }, {});
     setFormProduct({
       ...product,
       images: product.images?.map((image) => ({ ...image })) || [],
+      variants: product.variants?.map((variant) => ({ ...variant })) || [],
     });
     setFormStep(1);
+    setVariantOptions(Object.keys(existingAttributes).length
+      ? Object.entries(existingAttributes).map(([name, values]) => ({ name, values: values.join(", ") }))
+      : [{ name: "Color", values: "" }, { name: "Size", values: "" }]);
     setImageUrl("");
     setError("");
     setFieldErrors({});
+    setCategoryName("");
   };
 
   const updateFormProduct = (key, value) => {
@@ -81,6 +102,9 @@ function ManageItems() {
     for (const field of ["name", "slug", "categoryId"]) {
       if (!formProduct[field]?.trim()) errors[field] = "This field is required.";
     }
+    if (formProduct.categoryId && !categories.some((category) => category.id === formProduct.categoryId)) {
+      errors.categoryId = "Choose a valid category.";
+    }
     if (!Number.isInteger(Number(formProduct.priceCents)) || Number(formProduct.priceCents) < 0) {
       errors.priceCents = "Enter a non-negative integer.";
     }
@@ -91,7 +115,65 @@ function ManageItems() {
   const goToNextStep = () => {
     if (formStep === 1 && !validateDetails()) return;
     setError("");
-    setFormStep((step) => Math.min(3, step + 1));
+    setFormStep((step) => Math.min(4, step + 1));
+  };
+
+  const updateVariantOption = (index, key, value) => {
+    setVariantOptions((current) =>
+      current.map((option, optionIndex) =>
+        optionIndex === index ? { ...option, [key]: value } : option,
+      ),
+    );
+  };
+
+  const generateVariants = () => {
+    const options = variantOptions
+      .map((option) => ({
+        name: option.name.trim(),
+        values: option.values.split(",").map((value) => value.trim()).filter(Boolean),
+      }))
+      .filter((option) => option.name && option.values.length);
+    if (!options.length) {
+      setError("Add at least one option with values, such as Color: Black, White.");
+      return;
+    }
+    const combinations = options.reduce(
+      (result, option) =>
+        result.flatMap((combination) =>
+          option.values.map((value) => ({
+            ...combination,
+            [option.name]: value,
+          })),
+        ),
+      [{}],
+    );
+    setFormProduct((current) => ({
+      ...current,
+      variants: combinations.map((attributes, index) => {
+        const existing = current.variants?.find(
+          (variant) => JSON.stringify(variant.attributes) === JSON.stringify(attributes),
+        );
+        return existing || {
+          name: Object.values(attributes).join(" / "),
+          sku: "",
+          priceCents: "",
+          stock: 0,
+          attributes,
+          sortOrder: index,
+          isActive: true,
+        };
+      }),
+    }));
+    setError("");
+  };
+
+  const updateVariant = (index, key, value) => {
+    setFormProduct((current) => ({
+      ...current,
+      variants: current.variants.map((variant, variantIndex) =>
+        variantIndex === index ? { ...variant, [key]: value } : variant,
+      ),
+    }));
   };
 
   const addImage = () => {
@@ -142,6 +224,23 @@ function ManageItems() {
     }));
   };
 
+  const addCategory = async () => {
+    const name = categoryName.trim();
+    if (!name) return;
+    setCreatingCategory(true);
+    setError("");
+    try {
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const category = await createCategory({ name, slug });
+      updateFormProduct("categoryId", category.id);
+      setCategoryName("");
+    } catch (categoryError) {
+      setError(categoryError.message);
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
   const submitProduct = async (event) => {
     event.preventDefault();
     if (!validateDetails()) {
@@ -159,8 +258,17 @@ function ManageItems() {
       currency: (formProduct.currency || "USD").trim().toUpperCase(),
       sku: formProduct.sku?.trim() || null,
       priceCents: Number(formProduct.priceCents),
-      stock: Number(formProduct.stock),
+      stock: formProduct.variants?.length
+      ? formProduct.variants.reduce((total, variant) => total + Number(variant.stock || 0), 0)
+      : Number(formProduct.stock),
       images: formProduct.images.filter((image) => image.url),
+      variants: formProduct.variants?.map((variant, index) => ({
+        ...variant,
+        name: variant.name || Object.values(variant.attributes || {}).join(" / "),
+        priceCents: variant.priceCents === "" ? null : Number(variant.priceCents),
+        stock: Number(variant.stock || 0),
+        sortOrder: index,
+      })),
     };
     if (!payload.currency || payload.currency.length !== 3) {
       throw new Error("Currency must be a 3-letter code");
@@ -261,16 +369,15 @@ function ManageItems() {
       {formProduct && (
         <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-slate-950/70 p-4" role="dialog">
           <form className={`my-8 w-full max-w-2xl space-y-4 rounded-2xl p-6 ring-1 ${panel}`} onSubmit={submitProduct}>
-            <div className="flex items-center justify-between"><div><h2 className="text-xl font-bold">{formProduct.id ? "Edit product" : "Add product"}</h2><p className={`mt-1 text-sm ${muted}`}>Step {formStep} of 3</p></div><button onClick={() => setFormProduct(null)} type="button"><X /></button></div>
-            <div className="grid grid-cols-3 gap-2">
-              {["Details", "Images", "Review"].map((label, index) => <div className={`rounded-lg px-3 py-2 text-center text-xs font-semibold ${formStep === index + 1 ? "bg-cyan-500 text-white" : darkMode ? "bg-white/5 text-slate-400" : "bg-slate-100 text-slate-500"}`} key={label}>{index + 1}. {label}</div>)}
+            <div className="flex items-center justify-between"><div><h2 className="text-xl font-bold">{formProduct.id ? "Edit product" : "Add product"}</h2><p className={`mt-1 text-sm ${muted}`}>Step {formStep} of 4</p></div><button onClick={() => setFormProduct(null)} type="button"><X /></button></div>
+            <div className="grid grid-cols-4 gap-2">
+              {["Details", "Images", "Variants", "Review"].map((label, index) => <div className={`rounded-lg px-2 py-2 text-center text-xs font-semibold ${formStep === index + 1 ? "bg-cyan-500 text-white" : darkMode ? "bg-white/5 text-slate-400" : "bg-slate-100 text-slate-500"}`} key={label}>{index + 1}. {label}</div>)}
             </div>
             {formStep === 1 && <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 {[
                   ["name", "Name", "text"],
                   ["slug", "Slug", "text"],
-                  ["categoryId", "Category ID", "text"],
                   ["sku", "SKU", "text"],
                   ["priceCents", "Price (cents)", "number"],
                   ["stock", "Stock", "number"],
@@ -278,6 +385,13 @@ function ManageItems() {
                 ].map(([key, label, type]) => (
                   <label className="block text-sm font-medium" key={key}>{label}<input aria-invalid={Boolean(fieldErrors[key])} className={`mt-2 w-full rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${fieldErrors[key] ? "ring-red-500" : ""} ${input}`} min={type === "number" ? "0" : undefined} onChange={(event) => updateFormProduct(key, event.target.value)} type={type} value={formProduct[key] ?? ""} />{fieldErrors[key] && <span className="mt-1 block text-xs text-red-500">{fieldErrors[key]}</span>}</label>
                 ))}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Category<select aria-invalid={Boolean(fieldErrors.categoryId)} className={`mt-2 w-full rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${fieldErrors.categoryId ? "ring-red-500" : ""} ${input}`} onChange={(event) => updateFormProduct("categoryId", event.target.value)} value={formProduct.categoryId}><option value="">Select a category</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select>{fieldErrors.categoryId && <span className="mt-1 block text-xs text-red-500">{fieldErrors.categoryId}</span>}</label>
+                  <div className="flex gap-2">
+                    <input className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-sm ring-1 outline-none focus:ring-cyan-500 ${input}`} onChange={(event) => setCategoryName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addCategory(); } }} placeholder="New category name" value={categoryName} />
+                    <button className="rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-600 disabled:opacity-50" disabled={creatingCategory || !categoryName.trim()} onClick={addCategory} type="button">{creatingCategory ? "Adding..." : "Add category"}</button>
+                  </div>
+                </div>
               </div>
               <label className="block text-sm font-medium">Description<textarea className={`mt-2 min-h-28 w-full rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${input}`} onChange={(event) => updateFormProduct("description", event.target.value)} value={formProduct.description || ""} /></label>
               <label className="flex items-center gap-2 text-sm"><input checked={formProduct.isActive} onChange={(event) => updateFormProduct("isActive", event.target.checked)} type="checkbox" /> Active</label>
@@ -290,10 +404,17 @@ function ManageItems() {
               </div>
             </div>}
             {formStep === 3 && <div className="space-y-4">
+              <p className={`text-sm ${muted}`}>Define options and values. For example, Color: Black, White and Size: S, M, L creates six variants.</p>
+              {variantOptions.map((option, index) => <div className="flex gap-2" key={`${option.name}-${index}`}><input className={`w-32 rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${input}`} onChange={(event) => updateVariantOption(index, "name", event.target.value)} placeholder="Option name" value={option.name} /><input className={`min-w-0 flex-1 rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${input}`} onChange={(event) => updateVariantOption(index, "values", event.target.value)} placeholder="Values separated by commas" value={option.values} /><button className={`rounded-xl px-3 ${darkMode ? "bg-white/10" : "bg-slate-100"}`} onClick={() => setVariantOptions((current) => current.filter((_, optionIndex) => optionIndex !== index))} type="button"><Trash2 size={16} /></button></div>)}
+              <div className="flex gap-2"><button className={`rounded-xl px-3 py-2 text-sm font-semibold ${darkMode ? "bg-white/10" : "bg-slate-100"}`} onClick={() => setVariantOptions((current) => [...current, { name: "", values: "" }])} type="button">Add option</button><button className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white" onClick={generateVariants} type="button">Generate combinations</button></div>
+              {formProduct.variants?.map((variant, index) => <div className={`grid gap-2 rounded-xl p-3 ring-1 sm:grid-cols-[1fr_1fr_1fr_1fr_auto] ${darkMode ? "bg-white/5 ring-white/10" : "bg-slate-50 ring-slate-200"}`} key={`${variant.name}-${index}`}><div className="text-sm font-medium">{variant.name}</div><input className={`rounded-lg px-2 py-2 text-sm ring-1 ${input}`} onChange={(event) => updateVariant(index, "sku", event.target.value)} placeholder="SKU" value={variant.sku || ""} /><input className={`rounded-lg px-2 py-2 text-sm ring-1 ${input}`} min="0" onChange={(event) => updateVariant(index, "priceCents", event.target.value)} placeholder="Price override" type="number" value={variant.priceCents ?? ""} /><input className={`rounded-lg px-2 py-2 text-sm ring-1 ${input}`} min="0" onChange={(event) => updateVariant(index, "stock", event.target.value)} placeholder="Stock" type="number" value={variant.stock ?? 0} /></div>)}
+            </div>}
+            {formStep === 4 && <div className="space-y-4">
               <div className={`rounded-xl p-4 ${darkMode ? "bg-white/5" : "bg-slate-50"}`}><h3 className="font-semibold">{formProduct.name || "Untitled product"}</h3><p className={`mt-1 text-sm ${muted}`}>{formProduct.description || "No description"}</p><div className="mt-3 flex flex-wrap gap-3 text-sm"><span>{money(Number(formProduct.priceCents), formProduct.currency || "USD")}</span><span>{formProduct.stock} in stock</span><span>{formProduct.isActive ? "Active" : "Draft"}</span></div></div>
               <div className="grid grid-cols-3 gap-2">{formProduct.images?.map((image, index) => <img className="aspect-square w-full rounded-lg object-cover" key={`${image.url}-review-${index}`} src={image.url} alt="" />)}</div>
+              {formProduct.variants?.length > 0 && <div className="space-y-2"><h3 className="font-semibold">Variants</h3>{formProduct.variants.map((variant) => <div className={`flex justify-between rounded-lg px-3 py-2 text-sm ${darkMode ? "bg-white/5" : "bg-slate-50"}`} key={variant.name}><span>{variant.name}</span><span>{variant.stock} in stock</span></div>)}</div>}
             </div>}
-            <div className="flex justify-between gap-3 pt-2"><button className={`rounded-xl px-4 py-2.5 ring-1 ${input}`} disabled={saving || formStep === 1} onClick={() => setFormStep((step) => step - 1)} type="button">Back</button>{formStep < 3 ? <button className="rounded-xl bg-cyan-500 px-5 py-2.5 font-semibold text-white hover:bg-cyan-600" onClick={goToNextStep} type="button">Next</button> : <button className="rounded-xl bg-cyan-500 px-5 py-2.5 font-semibold text-white hover:bg-cyan-600 disabled:opacity-50" disabled={saving} type="submit">{saving ? "Saving..." : formProduct.id ? "Save changes" : "Create product"}</button>}</div>
+            <div className="flex justify-between gap-3 pt-2"><button className={`rounded-xl px-4 py-2.5 ring-1 ${input}`} disabled={saving || formStep === 1} onClick={() => setFormStep((step) => step - 1)} type="button">Back</button>{formStep < 4 ? <button className="rounded-xl bg-cyan-500 px-5 py-2.5 font-semibold text-white hover:bg-cyan-600" onClick={goToNextStep} type="button">Next</button> : <button className="rounded-xl bg-cyan-500 px-5 py-2.5 font-semibold text-white hover:bg-cyan-600 disabled:opacity-50" disabled={saving} type="submit">{saving ? "Saving..." : formProduct.id ? "Save changes" : "Create product"}</button>}</div>
           </form>
         </div>
       )}
