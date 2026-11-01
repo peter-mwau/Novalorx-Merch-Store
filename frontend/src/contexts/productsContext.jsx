@@ -13,6 +13,7 @@ const getErrorMessage = async (response, fallback) => {
 
 export function ProductsProvider({ children }) {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [pagination, setPagination] = useState({
     total: 0,
     totalPages: 1,
@@ -45,6 +46,30 @@ export function ProductsProvider({ children }) {
       throw new Error(await getErrorMessage(response, "Failed to fetch product"));
     }
     return response.json();
+  }, []);
+
+  const getCategories = useCallback(async () => {
+    const response = await fetch("/api/admin/categories");
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response, "Failed to fetch categories"));
+    }
+    const data = await response.json();
+    setCategories(data);
+    return data;
+  }, []);
+
+  const createCategory = useCallback(async (categoryData) => {
+    const response = await fetch("/api/admin/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(categoryData),
+    });
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response, "Failed to create category"));
+    }
+    const category = await response.json();
+    setCategories((current) => [...current, category].sort((a, b) => a.name.localeCompare(b.name)));
+    return category;
   }, []);
 
   const createProduct = useCallback(async (productData) => {
@@ -93,9 +118,12 @@ export function ProductsProvider({ children }) {
     <ProductsContext.Provider
       value={{
         products,
+        categories,
         pagination,
         getAllProducts,
         getProductById,
+        getCategories,
+        createCategory,
         createProduct,
         updateProduct,
         deleteProduct,
