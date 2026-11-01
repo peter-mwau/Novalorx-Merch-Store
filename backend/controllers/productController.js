@@ -11,40 +11,20 @@ const productFields = [
   "categoryId",
   "name",
   "slug",
-  "shortDescription",
   "description",
   "priceCents",
-  "compareAtCents",
-  "costCents",
   "currency",
   "sku",
-  "barcode",
   "stock",
-  "weightGrams",
-  "hasVariants",
-  "requiresShipping",
-  "taxClass",
-  "metaTitle",
-  "metaDescription",
   "isActive",
-  "isFeatured",
-  "publishedAt",
 ];
 
 const integerFields = new Set([
   "priceCents",
-  "compareAtCents",
-  "costCents",
   "stock",
-  "weightGrams",
 ]);
 
-const booleanFields = new Set([
-  "hasVariants",
-  "requiresShipping",
-  "isActive",
-  "isFeatured",
-]);
+const booleanFields = new Set(["isActive"]);
 
 const getProductData = (body, { partial = false } = {}) => {
   const data = {};
@@ -55,7 +35,7 @@ const getProductData = (body, { partial = false } = {}) => {
 
     if (integerFields.has(field)) {
       const value = Number(body[field]);
-      if (!Number.isInteger(value)) {
+      if (!Number.isInteger(value) || value < 0) {
         const error = new Error(`${field} must be an integer`);
         error.statusCode = 400;
         throw error;
@@ -68,31 +48,29 @@ const getProductData = (body, { partial = false } = {}) => {
         throw error;
       }
       data[field] = body[field];
-    } else if (field === "publishedAt") {
-      if (body[field] === null || body[field] === "") {
-        data[field] = null;
-      } else {
-        const date = new Date(body[field]);
-        if (Number.isNaN(date.getTime())) {
-          const error = new Error("publishedAt must be a valid date");
-          error.statusCode = 400;
-          throw error;
-        }
-        data[field] = date;
-      }
+    } else if (body[field] !== null && typeof body[field] !== "string") {
+      const error = new Error(`${field} must be a string`);
+      error.statusCode = 400;
+      throw error;
     } else {
-      data[field] = body[field];
+      data[field] = typeof body[field] === "string" ? body[field].trim() : body[field];
     }
   }
 
   if (!partial) {
     for (const field of ["categoryId", "name", "slug", "priceCents"]) {
-      if (data[field] === undefined || data[field] === "") {
+      if (data[field] === undefined || data[field] === null || data[field] === "") {
         const error = new Error(`${field} is required`);
         error.statusCode = 400;
         throw error;
       }
     }
+  }
+
+  if (data.currency !== undefined && (data.currency === null || data.currency.length !== 3)) {
+    const error = new Error("currency must be a 3-letter code");
+    error.statusCode = 400;
+    throw error;
   }
 
   return data;
@@ -142,7 +120,7 @@ const sendError = (res, error, message) => {
 };
 
 export const getAllProducts = async (req, res) => {
-  const { page = 1, limit = 20, categoryId, isActive, isFeatured, search } = req.query;
+  const { page = 1, limit = 20, categoryId, isActive, search } = req.query;
   const pageNumber = Number(page);
   const limitNumber = Number(limit);
 
@@ -153,7 +131,6 @@ export const getAllProducts = async (req, res) => {
   const where = {
     ...(categoryId ? { categoryId } : {}),
     ...(isActive !== undefined ? { isActive: isActive === "true" } : {}),
-    ...(isFeatured !== undefined ? { isFeatured: isFeatured === "true" } : {}),
     ...(search
       ? {
           OR: [
