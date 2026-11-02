@@ -26,6 +26,27 @@ const integerFields = new Set([
 
 const booleanFields = new Set(["isActive"]);
 
+const createSkuBase = (name) => {
+  const base = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toUpperCase();
+  return base.slice(0, 40) || "PRODUCT";
+};
+
+const createUniqueSku = async (name) => {
+  const base = createSkuBase(name);
+  let sku = base;
+  let suffix = 2;
+  while (await prisma.product.findUnique({ where: { sku } })) {
+    sku = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  return sku;
+};
+
 const getProductData = (body, { partial = false } = {}) => {
   const data = {};
 
@@ -81,6 +102,7 @@ const getNestedData = (body) => {
     ? body.images.map((image, index) => ({
         url: image.url,
         alt: image.alt || null,
+        color: image.color || null,
         sortOrder: image.sortOrder ?? index,
       }))
     : undefined;
@@ -237,6 +259,9 @@ export const createProduct = async (req, res) => {
   try {
     const data = getProductData(req.body);
     await validateCategory(data.categoryId);
+    if (!data.sku || data.sku === createSkuBase(data.name)) {
+      data.sku = await createUniqueSku(data.name);
+    }
     const { images, variants } = getNestedData(req.body);
     const product = await prisma.product.create({
       data: {

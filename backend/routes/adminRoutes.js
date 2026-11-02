@@ -9,6 +9,7 @@ import {
     getProductById,
     updateProduct,
 } from '../controllers/productController.js';
+import { uploadProductImage } from '../middlewares/uploadMiddleware.js';
 
 const router = Router();
 
@@ -26,5 +27,12 @@ router.get('/products/:id', getProductById);
 router.post('/products', createProduct);
 router.put('/products/:id', updateProduct);
 router.delete('/products/:id', deleteProduct);
+router.post('/product-images', uploadProductImage.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'An image file is required' });
+    return res.status(201).json({
+        url: `/uploads/productImages/${req.file.filename}`,
+        alt: req.file.originalname,
+    });
+});
 
 export default router;

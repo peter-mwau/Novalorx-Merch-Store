@@ -16,6 +16,15 @@ const emptyProduct = {
   images: [],
 };
 
+const generateSku = (name) =>
+  name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toUpperCase()
+    .slice(0, 40);
+
 const money = (cents, currency) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency }).format(
     cents || 0,
@@ -41,6 +50,7 @@ function ManageItems() {
     { name: "Size", values: "" },
   ]);
   const [imageUrl, setImageUrl] = useState("");
+  const [imageColor, setImageColor] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [categoryName, setCategoryName] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
@@ -95,13 +105,24 @@ function ManageItems() {
           ],
     );
     setImageUrl("");
+    setImageColor("");
     setError("");
     setFieldErrors({});
     setCategoryName("");
   };
 
   const updateFormProduct = (key, value) => {
-    setFormProduct((current) => ({ ...current, [key]: value }));
+    setFormProduct((current) => {
+      const next = { ...current, [key]: value };
+      if (
+        key === "name" &&
+        !current.id &&
+        (!current.sku || current.sku === generateSku(current.name))
+      ) {
+        next.sku = generateSku(value);
+      }
+      return next;
+    });
     setFieldErrors((current) => ({ ...current, [key]: "" }));
   };
 
@@ -212,14 +233,19 @@ function ManageItems() {
       ...current,
       images: [
         ...(current.images || []),
-        { url, sortOrder: current.images?.length || 0 },
+        {
+          url,
+          color: imageColor.trim() || null,
+          sortOrder: current.images?.length || 0,
+        },
       ],
     }));
     setImageUrl("");
+    setImageColor("");
     setError("");
   };
 
-  const addSelectedImage = (event) => {
+  const addSelectedImage = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
@@ -227,29 +253,50 @@ function ManageItems() {
       setError("Please choose an image file.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
+    const formData = new FormData();
+    formData.append("image", file);
+    try {
+      const response = await fetch("/api/admin/product-images", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "The image could not be uploaded.");
+      }
+      const uploadedImage = await response.json();
       setFormProduct((current) => ({
         ...current,
         images: [
           ...(current.images || []),
           {
-            url: reader.result,
-            alt: file.name,
+            url: uploadedImage.url,
+            alt: uploadedImage.alt,
+            color: imageColor.trim() || null,
             sortOrder: current.images?.length || 0,
           },
         ],
       }));
+      setImageColor("");
       setError("");
-    };
-    reader.onerror = () => setError("The selected image could not be read.");
-    reader.readAsDataURL(file);
+    } catch (uploadError) {
+      setError(uploadError.message);
+    }
   };
 
   const removeImage = (index) => {
     setFormProduct((current) => ({
       ...current,
       images: current.images.filter((_, imageIndex) => imageIndex !== index),
+    }));
+  };
+
+  const updateImage = (index, key, value) => {
+    setFormProduct((current) => ({
+      ...current,
+      images: current.images.map((image, imageIndex) =>
+        imageIndex === index ? { ...image, [key]: value } : image,
+      ),
     }));
   };
 
@@ -608,6 +655,12 @@ function ManageItems() {
             {formStep === 2 && (
               <div className="space-y-4">
                 <div className="flex flex-wrap gap-2">
+                  <input
+                    className={`w-32 rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${input}`}
+                    onChange={(event) => setImageColor(event.target.value)}
+                    placeholder="Color (e.g. White)"
+                    value={imageColor}
+                  />
                   <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 font-semibold text-white hover:bg-cyan-600">
                     <ImagePlus size={17} /> Choose file
                     <input
@@ -668,9 +721,19 @@ function ManageItems() {
                           <Trash2 size={15} />
                         </button>
                       </div>
-                      <p className={`truncate px-3 py-2 text-xs ${muted}`}>
-                        {image.url}
-                      </p>
+                      <div className="space-y-2 p-3">
+                        <input
+                          className={`w-full rounded-lg px-2 py-2 text-sm ring-1 outline-none focus:ring-cyan-500 ${input}`}
+                          onChange={(event) =>
+                            updateImage(index, "color", event.target.value)
+                          }
+                          placeholder="Color (e.g. White)"
+                          value={image.color || ""}
+                        />
+                        <p className={`truncate text-xs ${muted}`}>
+                          {image.url}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
