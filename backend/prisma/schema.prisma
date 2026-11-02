@@ -242,6 +242,7 @@ model ProductImage {
   productId String
   url       String   @db.MediumText
   alt       String?
+  color     String?
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 

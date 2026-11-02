@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import adminRoutes from './routes/adminRoutes.js';
 import publicProductRoutes from './routes/publicProductRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import { uploadDirectory } from './middlewares/uploadMiddleware.js';
 
 dotenv.config();
 
@@ -11,6 +12,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+app.use('/uploads/productImages', express.static(uploadDirectory));
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/products', publicProductRoutes);
