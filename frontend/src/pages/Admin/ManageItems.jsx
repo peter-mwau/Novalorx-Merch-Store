@@ -25,11 +25,6 @@ const generateSku = (name) =>
     .toUpperCase()
     .slice(0, 40);
 
-const money = (cents, currency) =>
-  new Intl.NumberFormat(undefined, { style: "currency", currency }).format(
-    cents || 0,
-  );
-
 function ManageItems() {
   const {
     products,
@@ -40,6 +35,7 @@ function ManageItems() {
     createProduct,
     updateProduct,
     deleteProduct,
+    getPriceDetails,
   } = useProducts();
   const { darkMode } = useTheme();
   const [query, setQuery] = useState("");
@@ -472,7 +468,12 @@ function ManageItems() {
                     </div>
                   </td>
                   <td className="px-5 py-4 font-medium">
-                    {money(product.priceCents, product.currency)}
+                    <div>
+                      <p>{getPriceDetails(product).usdLabel}</p>
+                      <p className={`text-xs font-normal ${muted}`}>
+                        {getPriceDetails(product).kshLabel}
+                      </p>
+                    </div>
                   </td>
                   <td
                     className={`px-5 py-4 ${product.stock === 0 ? "text-red-500" : ""}`}
@@ -557,7 +558,7 @@ function ManageItems() {
                     ["name", "Name", "text"],
                     ["slug", "Slug", "text"],
                     ["sku", "SKU", "text"],
-                    ["priceCents", "Price (cents)", "number"],
+                    ["priceCents", "Price (USD)", "number"],
                     ["stock", "Stock", "number"],
                     ["currency", "Currency", "text"],
                   ].map(([key, label, type]) => (
@@ -801,38 +802,56 @@ function ManageItems() {
                 </div>
                 {formProduct.variants?.map((variant, index) => (
                   <div
-                    className={`grid gap-2 rounded-xl p-3 ring-1 sm:grid-cols-[1fr_1fr_1fr_1fr_auto] ${darkMode ? "bg-white/5 ring-white/10" : "bg-slate-50 ring-slate-200"}`}
+                    className={`grid gap-3 rounded-xl p-3 ring-1 sm:grid-cols-[1.2fr_1fr_1fr_1fr] ${darkMode ? "bg-white/5 ring-white/10" : "bg-slate-50 ring-slate-200"}`}
                     key={`${variant.name}-${index}`}
                   >
-                    <div className="text-sm font-medium">{variant.name}</div>
-                    <input
-                      className={`rounded-lg px-2 py-2 text-sm ring-1 ${input}`}
-                      onChange={(event) =>
-                        updateVariant(index, "sku", event.target.value)
-                      }
-                      placeholder="SKU"
-                      value={variant.sku || ""}
-                    />
-                    <input
-                      className={`rounded-lg px-2 py-2 text-sm ring-1 ${input}`}
-                      min="0"
-                      onChange={(event) =>
-                        updateVariant(index, "priceCents", event.target.value)
-                      }
-                      placeholder="Price override"
-                      type="number"
-                      value={variant.priceCents ?? ""}
-                    />
-                    <input
-                      className={`rounded-lg px-2 py-2 text-sm ring-1 ${input}`}
-                      min="0"
-                      onChange={(event) =>
-                        updateVariant(index, "stock", event.target.value)
-                      }
-                      placeholder="Stock"
-                      type="number"
-                      value={variant.stock ?? 0}
-                    />
+                    <div>
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide">
+                        {variant.name}
+                      </p>
+                      <p className={`text-xs ${muted}`}>
+                        {Object.entries(variant.attributes || {})
+                          .map(([name, value]) => `${name}: ${value}`)
+                          .join(" / ")}
+                      </p>
+                    </div>
+                    <label className="text-xs font-medium">
+                      SKU
+                      <input
+                        className={`mt-1 w-full rounded-lg px-2 py-2 text-sm ring-1 ${input}`}
+                        onChange={(event) =>
+                          updateVariant(index, "sku", event.target.value)
+                        }
+                        placeholder="Optional SKU"
+                        value={variant.sku || ""}
+                      />
+                    </label>
+                    <label className="text-xs font-medium">
+                      Price (USD)
+                      <input
+                        className={`mt-1 w-full rounded-lg px-2 py-2 text-sm ring-1 ${input}`}
+                        min="0"
+                        onChange={(event) =>
+                          updateVariant(index, "priceCents", event.target.value)
+                        }
+                        placeholder="Uses product price"
+                        type="number"
+                        value={variant.priceCents ?? ""}
+                      />
+                    </label>
+                    <label className="text-xs font-medium">
+                      Quantity
+                      <input
+                        className={`mt-1 w-full rounded-lg px-2 py-2 text-sm ring-1 ${input}`}
+                        min="0"
+                        onChange={(event) =>
+                          updateVariant(index, "stock", event.target.value)
+                        }
+                        placeholder="0"
+                        type="number"
+                        value={variant.stock ?? 0}
+                      />
+                    </label>
                   </div>
                 ))}
               </div>
@@ -850,10 +869,10 @@ function ManageItems() {
                   </p>
                   <div className="mt-3 flex flex-wrap gap-3 text-sm">
                     <span>
-                      {money(
-                        Number(formProduct.priceCents),
-                        formProduct.currency || "USD",
-                      )}
+                      {getPriceDetails(formProduct).usdLabel}
+                      <span className={`text-xs font-normal ${muted}`}>
+                        ({getPriceDetails(formProduct).kshLabel})
+                      </span>
                     </span>
                     <span>{formProduct.stock} in stock</span>
                     <span>{formProduct.isActive ? "Active" : "Draft"}</span>

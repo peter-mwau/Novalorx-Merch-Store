@@ -22,9 +22,9 @@ export default function AppProviders() {
       <ThemeProvider>
         <ToastProvider>
           <AuthProvider>
-            <CartProvider>
-              <AdminProvider>
-                <ProductsProvider>
+            <ProductsProvider>
+              <CartProvider>
+                <AdminProvider>
                   {PUBLISHABLE_KEY ? (
                     <ClerkSessionBridge>
                       <App />
@@ -32,9 +32,9 @@ export default function AppProviders() {
                   ) : (
                     <App />
                   )}
-                </ProductsProvider>
-              </AdminProvider>
-            </CartProvider>
+                </AdminProvider>
+              </CartProvider>
+            </ProductsProvider>
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>
