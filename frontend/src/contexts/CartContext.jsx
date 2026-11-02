@@ -1,9 +1,10 @@
 import { createContext, useContext, useState } from "react";
-import { getPriceCents } from "../utils/productPricing.js";
+import { useProducts } from "./productsContext.jsx";
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
+  const { getPriceDetails } = useProducts();
   const [cartItems, setCartItems] = useState([]);
 
   const addToCart = (item) => {
@@ -52,9 +53,13 @@ export function CartProvider({ children }) {
 
   const clear = () => setCartItems([]);
   const count = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const subtotalCents = cartItems.reduce(
+  const subtotalUsd = cartItems.reduce(
     (total, item) =>
-      total + getPriceCents(item) * item.quantity,
+      total + getPriceDetails(item).usd * item.quantity,
+    0,
+  );
+  const subtotalKsh = cartItems.reduce(
+    (total, item) => total + getPriceDetails(item).ksh * item.quantity,
     0,
   );
 
@@ -69,7 +74,8 @@ export function CartProvider({ children }) {
         removeItem,
         clear,
         count,
-        subtotalCents,
+        subtotalUsd,
+        subtotalKsh,
       }}
     >
       {children}

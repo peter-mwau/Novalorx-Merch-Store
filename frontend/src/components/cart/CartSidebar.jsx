@@ -7,13 +7,6 @@ import { useTheme } from "../../contexts/themeContext.jsx";
 import { useCart } from "../../contexts/CartContext.jsx";
 import CartItem from "./CartItem";
 
-function formatMoney(cents, currency = "USD") {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-  }).format((cents || 0) / 100);
-}
-
 export default function CartSidebar({ open, onClose }) {
   const { darkMode } = useTheme();
   const isDark = darkMode;
@@ -22,7 +15,8 @@ export default function CartSidebar({ open, onClose }) {
     items: cartItems,
     updateQty,
     removeItem,
-    subtotalCents = 0,
+    subtotalUsd = 0,
+    subtotalKsh = 0,
     count = cartItems?.reduce((n, i) => n + i.quantity, 0),
     clear,
   } = useCart() || {};
@@ -186,9 +180,15 @@ export default function CartSidebar({ open, onClose }) {
                   <div className="flex items-center justify-between text-sm">
                     <span className={muted}>Subtotal</span>
                     <span className="font-semibold tracking-tight">
-                      {formatMoney(subtotalCents, cartItems[0]?.currency || "USD")}
+                      {new Intl.NumberFormat(undefined, {
+                        style: "currency",
+                        currency: cartItems[0]?.currency || "USD",
+                      }).format(subtotalUsd)}
                     </span>
                   </div>
+                  <p className={`mt-1 text-right text-sm font-normal ${muted}`}>
+                    KSh {subtotalKsh.toLocaleString()}
+                  </p>
                   <p className={`mt-1 text-[11px] ${muted}`}>
                     Taxes and shipping calculated at checkout.
                   </p>

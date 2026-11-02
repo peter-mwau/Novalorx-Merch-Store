@@ -1,6 +1,13 @@
 import { createContext, useCallback, useContext, useState } from "react";
 
 const ProductsContext = createContext(null);
+const USD_TO_KES = 130;
+
+const getUsdPrice = (value, variant) => {
+  const price = variant?.priceCents ?? value?.priceCents ?? value?.price ?? value?.unitPriceCents;
+  const numericPrice = Number(price);
+  return Number.isFinite(numericPrice) ? numericPrice : 0;
+};
 
 const getErrorMessage = async (response, fallback) => {
   try {
@@ -19,6 +26,30 @@ export function ProductsProvider({ children }) {
     totalPages: 1,
     currentPage: 1,
   });
+  const getPriceDetails = useCallback((value, variant) => {
+    const usd = getUsdPrice(value, variant);
+    return {
+      usd,
+      ksh: usd * USD_TO_KES,
+      usdLabel: new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: value?.currency || "USD",
+      }).format(usd),
+      kshLabel: `KSh ${(usd * USD_TO_KES).toLocaleString()}`,
+    };
+  }, []);
+  const getVariantImage = useCallback((product, variant) => {
+    if (variant?.imageUrl) return variant.imageUrl;
+    const color = Object.entries(variant?.attributes || {}).find(
+      ([name]) => name.toLowerCase() === "color",
+    )?.[1];
+    if (!color) return product?.images?.[0]?.url;
+    return (
+      product?.images?.find(
+        (image) => image.color?.trim().toLowerCase() === String(color).trim().toLowerCase(),
+      )?.url || product?.images?.[0]?.url
+    );
+  }, []);
 
   const getAllProducts = useCallback(async (params = {}) => {
     const query = new URLSearchParams({
@@ -127,6 +158,8 @@ export function ProductsProvider({ children }) {
         createProduct,
         updateProduct,
         deleteProduct,
+        getPriceDetails,
+        getVariantImage,
       }}
     >
       {children}

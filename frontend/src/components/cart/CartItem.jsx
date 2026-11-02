@@ -2,14 +2,7 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { useTheme } from "../../contexts/themeContext.jsx";
-import { getPriceCents } from "../../utils/productPricing.js";
-
-function formatMoney(cents, currency = "USD") {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-  }).format((cents || 0) / 100);
-}
+import { useProducts } from "../../contexts/productsContext.jsx";
 
 /**
  * CartItem
@@ -34,11 +27,13 @@ function CartItem({
   disabled = false,
 }) {
   const { darkMode } = useTheme();
+  const { getPriceDetails } = useProducts();
   const isDark = darkMode;
 
-  const unitPrice = getPriceCents(item);
+  const price = getPriceDetails(item);
+  const unitPrice = price.usd;
   const lineTotal = unitPrice * item.quantity;
-  const currency = item.currency || "USD";
+  const lineTotalKsh = price.ksh * item.quantity;
 
   const image =
     item.imageUrl || item.product?.images?.[0]?.url || item.product?.imageUrl;
@@ -134,7 +129,8 @@ function CartItem({
 
             {!isCompact && (
               <p className={`mt-1 text-xs ${mutedCls}`}>
-                {formatMoney(unitPrice, currency)} each
+                {price.usdLabel} each
+                <span className="font-normal"> ({price.kshLabel})</span>
               </p>
             )}
           </div>
@@ -187,7 +183,7 @@ function CartItem({
           <div className="text-right">
             {!isCompact && item.quantity > 1 && (
               <p className={`text-[11px] ${mutedCls}`}>
-                {item.quantity} × {formatMoney(unitPrice, currency)}
+                {item.quantity} × {price.usdLabel}
               </p>
             )}
             <p
@@ -195,7 +191,13 @@ function CartItem({
                 isCompact ? "text-sm" : "text-base"
               } ${isDark ? "text-white" : "text-slate-900"}`}
             >
-              {formatMoney(lineTotal, currency)}
+              {new Intl.NumberFormat(undefined, {
+                style: "currency",
+                currency: item.currency || "USD",
+              }).format(lineTotal)}
+            </p>
+            <p className={`text-sm font-normal ${mutedCls}`}>
+              KSh {lineTotalKsh.toLocaleString()}
             </p>
           </div>
         </div>
