@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import AuthModal from "./auth/AuthModal";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useToast } from "../contexts/ToastContext.jsx";
@@ -26,6 +26,7 @@ function Navbar() {
   const { isLoggedIn, user, logout, isAdmin } = useAuth();
   const { showToast, dismissToast } = useToast();
   const { darkMode, toggleTheme } = useTheme();
+  const { pathname } = useLocation();
   const isDark = darkMode;
   const [cartOpen, setCartOpen] = useState(false);
   const { count: cartCount } = useCart() || {};
@@ -95,6 +96,15 @@ function Navbar() {
   const ring = isDark ? "ring-white/10" : "ring-slate-200";
   const softSurface = isDark ? "bg-white/[0.04]" : "bg-slate-50";
   const divider = isDark ? "bg-white/10" : "bg-slate-200";
+  const navItems = [
+    { label: "Home", href: "/", end: true },
+    { label: "Shop", href: "/shop" },
+    { label: "About", href: "/about" },
+    ...(isAdmin ? [{ label: "Admin", href: "/admin" }] : []),
+    { label: "Contact", href: "/contact" },
+  ];
+  const isNavItemActive = (href) =>
+    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <>
@@ -141,18 +151,26 @@ function Navbar() {
 
           {/* ── Center links ── */}
           <ul className="relative hidden items-center gap-7 md:flex">
-            {[
-              { label: "Home", href: "/" },
-              { label: "Shop", href: "/shop" },
-              { label: "About", href: "/about" },
-              ...(isAdmin ? [{ label: "Admin", href: "/admin" }] : []),
-              { label: "Contact", href: "/contact" },
-            ].map((l) => (
-              <li key={l.href}>
-                <a href={l.href} className={`group ${linkBase}`}>
-                  {l.label}
-                  <span className="absolute -bottom-1 left-0 h-0.5 w-0 rounded-full bg-cyan-500 transition-all duration-300 group-hover:w-full" />
-                </a>
+            {navItems.map((item) => (
+              <li key={item.href}>
+                <NavLink
+                  to={item.href}
+                  end={item.end}
+                  className={`group ${linkBase} ${
+                    isNavItemActive(item.href)
+                      ? isDark
+                        ? "text-white"
+                        : "text-slate-900"
+                      : ""
+                  }`}
+                >
+                  {item.label}
+                  <span
+                    className={`absolute -bottom-1 left-0 h-0.5 rounded-full bg-cyan-500 transition-all duration-300 ${
+                      isNavItemActive(item.href) ? "w-full" : "w-0 group-hover:w-full"
+                    }`}
+                  />
+                </NavLink>
               </li>
             ))}
           </ul>
@@ -329,25 +347,22 @@ function Navbar() {
           >
             <div className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-cyan-500/20 blur-3xl" />
             <ul className="relative flex flex-col gap-1">
-              {[
-                { label: "Home", href: "/" },
-                { label: "Shop", href: "/shop" },
-                { label: "About", href: "/about" },
-                ...(isAdmin ? [{ label: "Admin", href: "/admin" }] : []),
-                { label: "Contact", href: "/contact" },
-              ].map((item) => (
+              {navItems.map((item) => (
                 <li key={item.href}>
-                  <a
-                    href={item.href}
+                  <NavLink
+                    to={item.href}
+                    end={item.end}
                     onClick={() => setMobileOpen(false)}
                     className={`block rounded-lg px-3 py-2.5 text-sm font-medium tracking-tight transition ${
-                      isDark
-                        ? "text-slate-300 hover:bg-white/5 hover:text-white"
-                        : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                      isNavItemActive(item.href)
+                        ? "bg-cyan-500/10 text-cyan-500"
+                        : isDark
+                          ? "text-slate-300 hover:bg-white/5 hover:text-white"
+                          : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
                     {item.label}
-                  </a>
+                  </NavLink>
                 </li>
               ))}
             </ul>

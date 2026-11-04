@@ -222,7 +222,7 @@ export default function Home() {
                     {heroProduct.name}
                   </p>
                   <Link
-                    to={`/product/${heroProduct.slug || heroProduct.id}`}
+                    to={`/product/${heroProduct.id}`}
                     className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-cyan-300 hover:text-cyan-200"
                   >
                     Shop now <ArrowRight size={12} />
@@ -435,7 +435,7 @@ export default function Home() {
                   <div className="flex flex-1 flex-col p-5">
                     <div className="flex items-start justify-between gap-2">
                       <Link
-                        to={`/product/${product.slug || product.id}`}
+                        to={`/product/${product.id}`}
                         className="line-clamp-1 text-base font-semibold tracking-tight transition hover:text-cyan-500"
                       >
                         {product.name}
@@ -449,7 +449,7 @@ export default function Home() {
                       <p className={`text-xs ${muted}`}>{price.kshLabel}</p>
                     </div>
                     <Link
-                      to={`/product/${product.slug || product.id}`}
+                      to={`/product/${product.id}`}
                       className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/25 transition hover:bg-cyan-400"
                     >
                       View details <ArrowRight size={14} />

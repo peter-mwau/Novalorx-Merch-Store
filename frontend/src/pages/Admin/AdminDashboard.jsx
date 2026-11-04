@@ -63,7 +63,7 @@ function AdminDashboard() {
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-500">
           Overview
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">Admin dashboard</h1>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Admin dashboard</h1>
         <p className={`mt-2 ${muted}`}>
           Monitor your community and keep user access up to date.
         </p>

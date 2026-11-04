@@ -55,10 +55,8 @@ export default function AdminSidebar() {
   return (
     <aside
       className={`relative flex shrink-0 flex-col overflow-hidden rounded-tr-3xl ring-1 backdrop-blur-xl transition-[width] duration-300 ease-out ${asideBase} ${
-        collapsed ? "w-[76px]" : "w-full md:w-60"
-      } min-h-[calc(100vh-5rem)] shadow-xl ${
-        isDark ? "shadow-black/30" : "shadow-slate-900/5"
-      }`}
+        collapsed ? "w-full md:w-[76px]" : "w-full md:w-60"
+      }  shadow-xl ${isDark ? "shadow-black/30" : "shadow-slate-900/5"}`}
       aria-label="Admin navigation"
     >
       {/* Signature glow blobs */}
@@ -120,9 +118,9 @@ export default function AdminSidebar() {
       {/* Nav */}
       <nav
         id="admin-sidebar-nav"
-        className="relative flex-1 overflow-y-auto px-2 py-3"
+        className="relative flex-1 overflow-x-auto overflow-y-hidden px-2 py-3 md:overflow-y-auto"
       >
-        <ul className="space-y-1">
+        <ul className="flex min-w-max gap-1 md:block md:min-w-0 md:space-y-1">
           {LINKS.map(({ name, icon: Icon, path }) => (
             <li key={path}>
               <NavLink
@@ -131,7 +129,7 @@ export default function AdminSidebar() {
                 className={({ isActive }) =>
                   `group relative flex items-center rounded-xl text-sm transition ${
                     collapsed
-                      ? "justify-center px-0 py-2.5"
+                      ? "justify-center px-3 py-2.5 md:px-0"
                       : "gap-3 px-3 py-2.5"
                   } ${
                     isActive
