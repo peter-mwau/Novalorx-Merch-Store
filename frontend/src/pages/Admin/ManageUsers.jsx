@@ -85,13 +85,13 @@ function ManageUsers() {
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-500">
             User administration
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Manage users</h1>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Manage users</h1>
           <p className={`mt-2 ${muted}`}>Admin accounts are protected and hidden from this list.</p>
         </div>
-        <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ring-1 ${input}`}>
+        <div className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 ring-1 sm:w-auto ${input}`}>
           <Search size={18} className={muted} />
           <input
-            className="w-44 bg-transparent text-sm outline-none"
+            className="w-full bg-transparent text-sm outline-none sm:w-44"
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search users..."
             value={query}
@@ -146,7 +146,7 @@ function ManageUsers() {
             <div className="flex items-center justify-between"><h2 className="text-xl font-bold">Edit user</h2><button onClick={() => setEditingUser(null)} type="button"><X /></button></div>
             <label className="block text-sm font-medium">Full name<input className={`mt-2 w-full rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${input}`} onChange={(e) => setEditingUser({ ...editingUser, fullName: e.target.value })} value={editingUser.fullName || ""} /></label>
             <label className="block text-sm font-medium">Phone<input className={`mt-2 w-full rounded-xl px-3 py-2.5 ring-1 outline-none focus:ring-cyan-500 ${input}`} onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })} value={editingUser.phone || ""} /></label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <label className="block text-sm font-medium">Role<select className={`mt-2 w-full rounded-xl px-3 py-2.5 ring-1 outline-none ${input}`} onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })} value={editingUser.role}><option value="CUSTOMER">Customer</option><option value="STAFF">Staff</option></select></label>
               <label className="block text-sm font-medium">Status<select className={`mt-2 w-full rounded-xl px-3 py-2.5 ring-1 outline-none ${input}`} onChange={(e) => setEditingUser({ ...editingUser, isActive: e.target.value === "true" })} value={String(editingUser.isActive)}><option value="true">Active</option><option value="false">Inactive</option></select></label>
             </div>
@@ -160,7 +160,7 @@ function ManageUsers() {
           <div className={`w-full max-w-md space-y-5 rounded-2xl p-6 ring-1 ${panel}`}>
             <h2 className="text-xl font-bold">Delete user?</h2>
             <p className={muted}>This permanently removes <strong className="text-current">{deletingUser.fullName || deletingUser.email}</strong> and cannot be undone.</p>
-            <div className="flex justify-end gap-3"><button className={`rounded-xl px-4 py-2.5 ring-1 ${input}`} onClick={() => setDeletingUser(null)} type="button">Cancel</button><button className="rounded-xl bg-red-500 px-4 py-2.5 font-semibold text-white hover:bg-red-600 disabled:opacity-50" disabled={saving} onClick={confirmDelete} type="button">{saving ? "Deleting..." : "Delete user"}</button></div>
+            <div className="flex flex-wrap justify-end gap-3"><button className={`rounded-xl px-4 py-2.5 ring-1 ${input}`} onClick={() => setDeletingUser(null)} type="button">Cancel</button><button className="rounded-xl bg-red-500 px-4 py-2.5 font-semibold text-white hover:bg-red-600 disabled:opacity-50" disabled={saving} onClick={confirmDelete} type="button">{saving ? "Deleting..." : "Delete user"}</button></div>
           </div>
         </div>
       )}

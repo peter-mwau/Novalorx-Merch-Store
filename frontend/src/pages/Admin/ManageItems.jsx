@@ -386,7 +386,7 @@ function ManageItems() {
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-500">
             Catalog administration
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">
+          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
             Manage items
           </h1>
           <p className={`mt-2 ${muted}`}>
@@ -395,18 +395,18 @@ function ManageItems() {
         </div>
         <div className="flex flex-wrap gap-3">
           <div
-            className={`flex items-center gap-2 rounded-xl px-3 py-2 ring-1 ${input}`}
+            className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 ring-1 sm:w-auto ${input}`}
           >
             <Search size={18} className={muted} />
             <input
-              className="w-44 bg-transparent text-sm outline-none"
+              className="w-full bg-transparent text-sm outline-none sm:w-44"
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search products..."
               value={query}
             />
           </div>
           <button
-            className="flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-cyan-600"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-cyan-600 sm:w-auto"
             onClick={() => openProductForm()}
             type="button"
           >
@@ -525,7 +525,7 @@ function ManageItems() {
           role="dialog"
         >
           <form
-            className={`my-8 w-full max-w-2xl space-y-4 rounded-2xl p-6 ring-1 ${panel}`}
+            className={`my-4 w-full max-w-2xl space-y-4 rounded-2xl p-4 ring-1 sm:my-8 sm:p-6 ${panel}`}
             onSubmit={submitProduct}
           >
             <div className="flex items-center justify-between">
@@ -539,7 +539,7 @@ function ManageItems() {
                 <X />
               </button>
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {["Details", "Images", "Variants", "Review"].map(
                 (label, index) => (
                   <div
@@ -878,7 +878,7 @@ function ManageItems() {
                     <span>{formProduct.isActive ? "Active" : "Draft"}</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {formProduct.images?.map((image, index) => (
                     <img
                       className="aspect-square w-full rounded-lg object-cover"
@@ -952,7 +952,7 @@ function ManageItems() {
               This permanently removes{" "}
               <strong className="text-current">{deletingProduct.name}</strong>.
             </p>
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-wrap justify-end gap-3">
               <button
                 className={`rounded-xl px-4 py-2.5 ring-1 ${input}`}
                 onClick={() => setDeletingProduct(null)}

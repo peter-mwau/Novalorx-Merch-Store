@@ -12,6 +12,7 @@ import ManageUsers from "./pages/Admin/ManageUsers";
 import ManageItems from "./pages/Admin/ManageItems";
 import Report from "./pages/Admin/Report";
 import { useAuth } from "./contexts/AuthContext.jsx";
+import About from "./pages/About.jsx";
 
 function AdminRoute() {
   const { isAdmin, loading } = useAuth();
@@ -28,7 +29,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/shop" element={<Products />} />
         <Route path="/product/:id" element={<ProductDetails />} />
-        <Route path="/about" element={<h1>About Page</h1>} />
+        <Route path="/about" element={<About />} />
         <Route path="/profile" element={<Profile />} />
 
         <Route path="/admin" element={<AdminRoute />}>
