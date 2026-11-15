@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useTheme } from "../contexts/themeContext.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 const CHANNELS = [
   {
@@ -64,11 +65,13 @@ const FAQS = [
 
 export default function Contact() {
   const { darkMode } = useTheme();
+  const { user } = useAuth();
   const isDark = darkMode;
 
   const [form, setForm] = useState({
     name: "",
     email: "",
+    cc: "",
     subject: "",
     message: "",
   });
@@ -97,12 +100,20 @@ export default function Contact() {
 
   const update = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  useEffect(() => {
+    if (user?.email) {
+      setForm((currentForm) =>
+        currentForm.email ? currentForm : { ...currentForm, email: user.email },
+      );
+    }
+  }, [user?.email]);
+
   const submit = async (e) => {
     e.preventDefault();
     setError("");
     setSending(true);
     try {
-      const res = await fetch("/api/contact", {
+      const res = await fetch("/api/mail/send-mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -112,7 +123,13 @@ export default function Contact() {
         throw new Error(data?.error || "Message could not be sent. Try again.");
       }
       setSent(true);
-      setForm({ name: "", email: "", subject: "", message: "" });
+      setForm({
+        name: "",
+        email: user?.email || "",
+        cc: "",
+        subject: "",
+        message: "",
+      });
     } catch (err) {
       setError(err.message || "Something went wrong.");
     } finally {
@@ -266,6 +283,17 @@ export default function Contact() {
                         value={form.subject}
                         onChange={update("subject")}
                         placeholder="Order #1234, custom print, general question..."
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className={labelCls}>CC (optional)</span>
+                      <input
+                        type="email"
+                        className={inputBase}
+                        value={form.cc}
+                        onChange={update("cc")}
+                        placeholder="someone@example.com"
                       />
                     </label>
 

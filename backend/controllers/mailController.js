@@ -16,25 +16,37 @@ const transporter = nodemailer.createTransport({
 
 
 const sendEmail = async (req, res) => {
-    const { from, to, subject, text, html } = req.body;
+    const { name, email, cc, subject, message } = req.body;
 
-    console.log("Body received for sending email:", { from, to, subject, text, html });
-
-    if (!from || !to || !subject || (!text && !html)) {
-        return res.status(400).json({ error: "Missing required fields: from, to, subject, and either text or html" });
+    if (
+        typeof name !== "string" ||
+        typeof email !== "string" ||
+        typeof message !== "string" ||
+        !name.trim() ||
+        !email.trim() ||
+        !message.trim()
+    ) {
+        return res.status(400).json({ error: "Name, email, and message are required" });
     }
 
-    if (typeof from !== "string" || !from.includes("@")) {
-        return res.status(400).json({ error: "Invalid 'from' field. It must be an email address." });
+    if (!email.includes("@")) {
+        return res.status(400).json({ error: "Invalid email address" });
+    }
+
+    if (cc !== undefined && cc !== null && (typeof cc !== "string" || !cc.includes("@"))) {
+        return res.status(400).json({ error: "Invalid CC email address" });
     }
 
     try {
         const info = await transporter.sendMail({
-            from: from,
-            to,
-            subject: subject, // subject line
-            text: text, // plain text body
-            html: html, // HTML body
+            from: process.env.SMTP_USER,
+            to: process.env.CONTACT_EMAIL || process.env.SMTP_USER,
+            replyTo: email,
+            ...(cc?.trim() ? { cc: cc.trim() } : {}),
+            subject: typeof subject === "string" && subject.trim()
+                ? subject.trim()
+                : `Contact form message from ${name.trim()}`,
+            text: `Name: ${name}\nEmail: ${email}\n\n${message}`,
         });
 
         console.log("Email sent successfully:", info);
